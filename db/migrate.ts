@@ -3,6 +3,7 @@ import { db } from "./index";
 import { users, matches } from "./schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { migrate } from "drizzle-orm/neon-serverless/migrator";
+import { sql } from "drizzle-orm";
 
 async function runMigration() {
   console.log("Running migration...");

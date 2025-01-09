@@ -90,6 +90,11 @@ export function registerRoutes(app: Express): Server {
 
       const user = await db.query.users.findFirst({
         where: eq(users.username, username),
+        columns: {
+          id: true,
+          username: true,
+          password: true
+        }
       });
 
       if (!user || !(await crypto.compare(password, user.password))) {
@@ -97,7 +102,13 @@ export function registerRoutes(app: Express): Server {
       }
 
       req.session.userId = user.id;
-      res.json(user);
+      
+      // Fetch full user data after successful authentication
+      const fullUser = await db.query.users.findFirst({
+        where: eq(users.id, user.id)
+      });
+      
+      res.json(fullUser);
     } catch (error: any) {
       console.error("Login error:", error);
       res.status(500).send(error.message || "Server error");

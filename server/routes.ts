@@ -8,6 +8,13 @@ import { promisify } from "util";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
+// Extend Express Session type
+declare module "express-session" {
+  interface SessionData {
+    userId: number;
+  }
+}
+
 const scryptAsync = promisify(scrypt);
 
 const crypto = {

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 
@@ -6,6 +6,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
+  email: text("email").unique().notNull(),
   name: text("name").notNull(),
   age: integer("age").notNull(),
   location: text("location").notNull(),
@@ -15,6 +16,7 @@ export const users = pgTable("users", {
   socialIds: text("social_ids").notNull(),
   photoUrl: text("photo_url").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  newsletterEnabled: boolean("newsletter_enabled").default(true).notNull(),
 });
 
 export const matches = pgTable("matches", {

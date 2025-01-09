@@ -7,6 +7,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { startNewsletterScheduler } from "./services/newsletter";
 
 declare module "express-session" {
   interface SessionData {
@@ -70,6 +71,8 @@ export function registerRoutes(app: Express): Server {
           publicDescription: profile.publicDescription || "",
           privateDescription: profile.privateDescription || "",
           socialIds: profile.socialIds || "",
+          email: profile.email || "",
+          newsletterEnabled: true,
         })
         .returning();
 
@@ -181,7 +184,38 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // New endpoint to toggle newsletter subscription
+  app.post("/api/newsletter/toggle", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, req.session.userId),
+      });
+
+      if (!user) {
+        return res.status(404).send("User not found");
+      }
+
+      const [updatedUser] = await db
+        .update(users)
+        .set({ newsletterEnabled: !user.newsletterEnabled })
+        .where(eq(users.id, req.session.userId))
+        .returning();
+
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).send("Server error");
+    }
+  });
+
   const httpServer = createServer(app);
+
+  // Start the newsletter scheduler
+  startNewsletterScheduler();
+
   return httpServer;
 }
 

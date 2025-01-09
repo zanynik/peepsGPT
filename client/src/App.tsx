@@ -323,6 +323,22 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
       </div>
       <div>
         <Input 
+          type="email" 
+          placeholder="Email" 
+          {...register("email", { 
+            required: "Email is required",
+            pattern: {
+              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+              message: "Invalid email address"
+            }
+          })} 
+        />
+        {errors.email && (
+          <p className="text-sm text-red-500 mt-1">{errors.email.message as string}</p>
+        )}
+      </div>
+      <div>
+        <Input 
           type="number" 
           placeholder="Age" 
           {...register("age", { 
@@ -368,6 +384,16 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
           className="h-24"
         />
         <p className="text-sm text-gray-500 mt-1">This is just for you</p>
+      </div>
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          {...register("newsletterEnabled")}
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+        />
+        <label className="text-sm text-gray-700">
+          Receive weekly match recommendations via email
+        </label>
       </div>
       <Button type="submit">Update Profile</Button>
     </form>

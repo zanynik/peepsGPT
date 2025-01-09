@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, HelpCircle } from "lucide-react";
+import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
 import type { User } from "@db/schema";
 
 interface UserWithMatch extends User {
@@ -17,6 +18,7 @@ interface UserWithMatch extends User {
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithMatch | null>(null);
+  const [runTutorial, setRunTutorial] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -29,6 +31,46 @@ function App() {
     queryKey: ["/api/users"],
     enabled: isLoggedIn,
   });
+
+  // Start tutorial automatically for new users
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
+    if (isLoggedIn && !hasSeenTutorial) {
+      setRunTutorial(true);
+    }
+  }, [isLoggedIn]);
+
+  const tutorialSteps: Step[] = [
+    {
+      target: '.profile-section',
+      content: 'Welcome to the matching platform! This is your profile section where you can edit your details and preferences.',
+      disableBeacon: true,
+    },
+    {
+      target: '.photo-upload',
+      content: 'Add a photo to make your profile more appealing. You can upload an image or provide a URL.',
+    },
+    {
+      target: '.matches-section',
+      content: 'Here you can see your potential matches, sorted by compatibility percentage.',
+    },
+    {
+      target: '.match-card',
+      content: 'Click on any profile card to view detailed information about that person.',
+    },
+    {
+      target: '.social-info',
+      content: 'Add your social media handles to let others connect with you on different platforms.',
+    },
+  ];
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+      localStorage.setItem('hasSeenTutorial', 'true');
+      setRunTutorial(false);
+    }
+  };
 
   const loginMutation = useMutation({
     mutationFn: async (data: { username: string; password: string }) => {
@@ -100,24 +142,54 @@ function App() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <div className="space-y-8">
-        {currentUser && (
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
-              <ProfileForm user={currentUser} onSubmit={updateProfileMutation.mutate} />
-            </CardContent>
-          </Card>
-        )}
+    <>
+      <Joyride
+        steps={tutorialSteps}
+        run={runTutorial}
+        continuous
+        showProgress
+        showSkipButton
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: '#000',
+          },
+        }}
+      />
 
-        {selectedUser ? (
-          <UserProfile user={selectedUser} onClose={() => setSelectedUser(null)} />
-        ) : (
-          <UserList users={users} onSelect={setSelectedUser} />
-        )}
+      <div className="container mx-auto p-4 max-w-4xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Matching Platform</h1>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setRunTutorial(true)}
+          >
+            <HelpCircle className="h-4 w-4 mr-2" />
+            Tutorial
+          </Button>
+        </div>
+
+        <div className="space-y-8">
+          {currentUser && (
+            <Card className="profile-section">
+              <CardContent className="p-6">
+                <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
+                <ProfileForm user={currentUser} onSubmit={updateProfileMutation.mutate} />
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedUser ? (
+            <UserProfile user={selectedUser} onClose={() => setSelectedUser(null)} />
+          ) : (
+            <div className="matches-section">
+              <UserList users={users} onSelect={setSelectedUser} />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -228,7 +300,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4 photo-upload">
         <Avatar className="h-20 w-20">
           <img src={photoPreview} alt={user.name} />
         </Avatar>
@@ -277,7 +349,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
           <p className="text-sm text-red-500 mt-1">{errors.gender.message as string}</p>
         )}
       </div>
-      <div>
+      <div className="social-info">
         <Input placeholder="Social IDs" {...register("socialIds")} />
         <p className="text-sm text-gray-500 mt-1">Add your social media handles (comma-separated)</p>
       </div>
@@ -310,7 +382,7 @@ function UserList({ users, onSelect }: { users: UserWithMatch[]; onSelect: (user
         {users.map((user) => (
           <Card 
             key={user.id} 
-            className="cursor-pointer hover:shadow-lg transition-shadow" 
+            className="cursor-pointer hover:shadow-lg transition-shadow match-card" 
             onClick={() => onSelect(user)}
           >
             <CardContent className="p-4">

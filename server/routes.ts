@@ -50,7 +50,7 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/register", async (req, res) => {
     try {
-      const { username, password, ...profile } = req.body;
+      const { username, password, email, ...profile } = req.body;
 
       const existingUser = await db.query.users.findFirst({
         where: eq(users.username, username),
@@ -66,20 +66,21 @@ export function registerRoutes(app: Express): Server {
         .values({
           username,
           password: hashedPassword,
+          email,
           ...profile,
           photoUrl: profile.photoUrl || "https://via.placeholder.com/150",
           publicDescription: profile.publicDescription || "",
           privateDescription: profile.privateDescription || "",
           socialIds: profile.socialIds || "",
-          email: profile.email || "",
           newsletterEnabled: true,
         })
         .returning();
 
       req.session.userId = user.id;
       res.json(user);
-    } catch (error) {
-      res.status(500).send("Server error");
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      res.status(500).send(error.message || "Server error");
     }
   });
 
@@ -97,8 +98,9 @@ export function registerRoutes(app: Express): Server {
 
       req.session.userId = user.id;
       res.json(user);
-    } catch (error) {
-      res.status(500).send("Server error");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      res.status(500).send(error.message || "Server error");
     }
   });
 
@@ -113,15 +115,20 @@ export function registerRoutes(app: Express): Server {
       return res.status(401).send("Not authenticated");
     }
 
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, req.session.userId),
-    });
+    try {
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, req.session.userId),
+      });
 
-    if (!user) {
-      return res.status(404).send("User not found");
+      if (!user) {
+        return res.status(404).send("User not found");
+      }
+
+      res.json(user);
+    } catch (error: any) {
+      console.error("Get user error:", error);
+      res.status(500).send(error.message || "Server error");
     }
-
-    res.json(user);
   });
 
   app.get("/api/users", async (req, res) => {
@@ -129,41 +136,48 @@ export function registerRoutes(app: Express): Server {
       return res.status(401).send("Not authenticated");
     }
 
-    const allUsers = await db.query.users.findMany();
-    const usersWithMatches = await Promise.all(
-      allUsers
-        .filter(user => user.id !== req.session.userId)
-        .map(async (user) => {
-          const existingMatch = await db.query.matches.findFirst({
-            where: and(
-              eq(matches.user1Id, req.session.userId),
-              eq(matches.user2Id, user.id)
-            ),
-          });
+    try {
+      const allUsers = await db.query.users.findMany();
+      const currentUserId = req.session.userId;
 
-          if (!existingMatch) {
-            const matchScore = calculateMatch(user, req.session.userId);
-            const [newMatch] = await db
-              .insert(matches)
-              .values({
-                user1Id: req.session.userId,
-                user2Id: user.id,
-                percentage: matchScore,
-              })
-              .returning();
+      const usersWithMatches = await Promise.all(
+        allUsers
+          .filter(user => user.id !== currentUserId)
+          .map(async (user) => {
+            const existingMatch = await db.query.matches.findFirst({
+              where: and(
+                eq(matches.user1Id, currentUserId),
+                eq(matches.user2Id, user.id)
+              ),
+            });
 
-            return { ...user, matchPercentage: newMatch.percentage };
-          }
+            if (!existingMatch) {
+              const matchScore = calculateMatch(user, allUsers.find(u => u.id === currentUserId));
+              const [newMatch] = await db
+                .insert(matches)
+                .values({
+                  user1Id: currentUserId,
+                  user2Id: user.id,
+                  percentage: matchScore,
+                })
+                .returning();
 
-          return { ...user, matchPercentage: existingMatch.percentage };
-        })
-    );
+              return { ...user, matchPercentage: newMatch.percentage };
+            }
 
-    const sortedUsers = usersWithMatches.sort((a, b) => 
-      (b.matchPercentage || 0) - (a.matchPercentage || 0)
-    );
+            return { ...user, matchPercentage: existingMatch.percentage };
+          })
+      );
 
-    res.json(sortedUsers);
+      const sortedUsers = usersWithMatches.sort((a, b) => 
+        (b.matchPercentage || 0) - (a.matchPercentage || 0)
+      );
+
+      res.json(sortedUsers);
+    } catch (error: any) {
+      console.error("Get users error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
   });
 
   app.put("/api/profile", async (req, res) => {
@@ -179,12 +193,12 @@ export function registerRoutes(app: Express): Server {
         .returning();
 
       res.json(user);
-    } catch (error) {
-      res.status(500).send("Server error");
+    } catch (error: any) {
+      console.error("Update profile error:", error);
+      res.status(500).send(error.message || "Server error");
     }
   });
 
-  // New endpoint to toggle newsletter subscription
   app.post("/api/newsletter/toggle", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
@@ -206,8 +220,9 @@ export function registerRoutes(app: Express): Server {
         .returning();
 
       res.json(updatedUser);
-    } catch (error) {
-      res.status(500).send("Server error");
+    } catch (error: any) {
+      console.error("Newsletter toggle error:", error);
+      res.status(500).send(error.message || "Server error");
     }
   });
 
@@ -219,18 +234,24 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-function calculateMatch(user1: any, user2Id: number): number {
+function calculateMatch(user1: any, user2: any | undefined): number {
+  if (!user2) return 50; // Default score if no comparison user found
+
   const baseScore = 50;
   let score = baseScore;
 
-  const ageDiff = Math.abs(user1.age - user2Id);
+  // Age comparison
+  const ageDiff = Math.abs(user1.age - user2.age);
   score += Math.max(0, 20 - ageDiff);
 
-  if (user1.location === user2Id) {
+  // Location matching
+  if (user1.location === user2.location) {
     score += 20;
   }
 
+  // Add some randomness to prevent identical scores
   score += Math.floor(Math.random() * 20) - 10;
 
+  // Ensure score is between 0 and 100
   return Math.min(100, Math.max(0, score));
 }

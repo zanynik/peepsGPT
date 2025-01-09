@@ -2,13 +2,12 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
 import { users, matches } from "@db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
-// Extend Express Session type
 declare module "express-session" {
   interface SessionData {
     userId: number;
@@ -128,25 +127,40 @@ export function registerRoutes(app: Express): Server {
     }
 
     const allUsers = await db.query.users.findMany();
-    const matchPercentages = await Promise.all(
-      allUsers.map(async (user) => {
-        if (user.id === req.session.userId) return user;
+    const usersWithMatches = await Promise.all(
+      allUsers
+        .filter(user => user.id !== req.session.userId)
+        .map(async (user) => {
+          const existingMatch = await db.query.matches.findFirst({
+            where: and(
+              eq(matches.user1Id, req.session.userId),
+              eq(matches.user2Id, user.id)
+            ),
+          });
 
-        const match = await db.query.matches.findFirst({
-          where: and(
-            eq(matches.user1Id, req.session.userId),
-            eq(matches.user2Id, user.id)
-          ),
-        });
+          if (!existingMatch) {
+            const matchScore = calculateMatch(user, req.session.userId);
+            const [newMatch] = await db
+              .insert(matches)
+              .values({
+                user1Id: req.session.userId,
+                user2Id: user.id,
+                percentage: matchScore,
+              })
+              .returning();
 
-        return {
-          ...user,
-          matchPercentage: match?.percentage || calculateMatch(user, req.session.userId),
-        };
-      })
+            return { ...user, matchPercentage: newMatch.percentage };
+          }
+
+          return { ...user, matchPercentage: existingMatch.percentage };
+        })
     );
 
-    res.json(matchPercentages);
+    const sortedUsers = usersWithMatches.sort((a, b) => 
+      (b.matchPercentage || 0) - (a.matchPercentage || 0)
+    );
+
+    res.json(sortedUsers);
   });
 
   app.put("/api/profile", async (req, res) => {
@@ -171,7 +185,18 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-// Simple matching algorithm based on profile similarity
 function calculateMatch(user1: any, user2Id: number): number {
-  return Math.floor(Math.random() * 100);
+  const baseScore = 50;
+  let score = baseScore;
+
+  const ageDiff = Math.abs(user1.age - user2Id);
+  score += Math.max(0, 20 - ageDiff);
+
+  if (user1.location === user2Id) {
+    score += 20;
+  }
+
+  score += Math.floor(Math.random() * 20) - 10;
+
+  return Math.min(100, Math.max(0, score));
 }

@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { EnhancedCard } from "@/components/ui/enhanced-card";
-import { EnhancedButton } from "@/components/ui/enhanced-button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, HelpCircle } from "lucide-react";
 import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
-import { motion } from "framer-motion";
-import { fadeIn, slideUp, staggerList } from "@/lib/animations";
 import type { User } from "@db/schema";
 
 interface UserWithMatch extends User {
@@ -137,23 +135,14 @@ function App() {
 
   if (userLoading || usersLoading) {
     return (
-      <motion.div 
-        className="flex items-center justify-center min-h-screen"
-        initial="hidden"
-        animate="visible"
-        variants={fadeIn}
-      >
+      <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={fadeIn}
-    >
+    <>
       <Joyride
         steps={tutorialSteps}
         run={runTutorial}
@@ -169,35 +158,30 @@ function App() {
       />
 
       <div className="container mx-auto p-4 max-w-4xl">
-        <motion.div 
-          className="flex justify-between items-center mb-6"
-          variants={slideUp}
-        >
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Matching Platform</h1>
-          <EnhancedButton 
+          <Button 
             variant="outline" 
             size="sm"
             onClick={() => setRunTutorial(true)}
           >
             <HelpCircle className="h-4 w-4 mr-2" />
             Tutorial
-          </EnhancedButton>
-        </motion.div>
+          </Button>
+        </div>
 
         <div className="space-y-8">
           {currentUser && (
-            <motion.div variants={slideUp}>
-              <EnhancedCard className="profile-section">
+            <Card className="profile-section">
+              <CardContent className="p-6">
                 <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
                 <ProfileForm user={currentUser} onSubmit={updateProfileMutation.mutate} />
-              </EnhancedCard>
-            </motion.div>
+              </CardContent>
+            </Card>
           )}
 
           {selectedUser ? (
-            <motion.div variants={slideUp}>
-              <UserProfile user={selectedUser} onClose={() => setSelectedUser(null)} />
-            </motion.div>
+            <UserProfile user={selectedUser} onClose={() => setSelectedUser(null)} />
           ) : (
             <div className="matches-section">
               <UserList users={users} onSelect={setSelectedUser} />
@@ -205,185 +189,97 @@ function App() {
           )}
         </div>
       </div>
-    </motion.div>
+    </>
   );
 }
 
 function AuthForm({ onLogin, onRegister }: any) {
   const [isLogin, setIsLogin] = useState(true);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, formState: { errors } } = useForm();
 
   return (
-    <motion.div 
-      className="min-h-screen flex items-center justify-center bg-gray-50"
-      initial="hidden"
-      animate="visible"
-      variants={fadeIn}
-    >
-      <EnhancedCard className="w-full max-w-md mx-4">
-        <h1 className="text-2xl font-bold mb-4">{isLogin ? "Login" : "Register"}</h1>
-        <form onSubmit={handleSubmit(isLogin ? onLogin : onRegister)} className="space-y-4">
-          <div>
-            <Input 
-              placeholder="Username" 
-              {...register("username", { required: "Username is required" })} 
-            />
-            {errors.username && (
-              <p className="text-sm text-red-500 mt-1">{errors.username.message as string}</p>
-            )}
-          </div>
-          <div>
-            <Input 
-              type="password" 
-              placeholder="Password" 
-              {...register("password", { required: "Password is required" })} 
-            />
-            {errors.password && (
-              <p className="text-sm text-red-500 mt-1">{errors.password.message as string}</p>
-            )}
-          </div>
-          {!isLogin && (
-            <>
-              <div>
-                <Input 
-                  placeholder="Name" 
-                  {...register("name", { required: "Name is required" })} 
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-500 mt-1">{errors.name.message as string}</p>
-                )}
-              </div>
-              <div>
-                <Input 
-                  type="number" 
-                  placeholder="Age" 
-                  {...register("age", { 
-                    required: "Age is required",
-                    min: { value: 18, message: "Must be 18 or older" }
-                  })} 
-                />
-                {errors.age && (
-                  <p className="text-sm text-red-500 mt-1">{errors.age.message as string}</p>
-                )}
-              </div>
-              <div>
-                <Input 
-                  placeholder="Location" 
-                  {...register("location", { required: "Location is required" })} 
-                />
-                {errors.location && (
-                  <p className="text-sm text-red-500 mt-1">{errors.location.message as string}</p>
-                )}
-              </div>
-              <div>
-                <Input 
-                  placeholder="Gender" 
-                  {...register("gender", { required: "Gender is required" })} 
-                />
-                {errors.gender && (
-                  <p className="text-sm text-red-500 mt-1">{errors.gender.message as string}</p>
-                )}
-              </div>
-            </>
-          )}
-          <EnhancedButton 
-            type="submit" 
-            className="w-full"
-            isLoading={isSubmitting}
-            loadingText={isLogin ? "Logging in..." : "Registering..."}
-          >
-            {isLogin ? "Login" : "Register"}
-          </EnhancedButton>
-        </form>
-        <EnhancedButton
-          variant="link"
-          className="mt-4"
-          onClick={() => setIsLogin(!isLogin)}
-        >
-          {isLogin ? "Need an account?" : "Already have an account?"}
-        </EnhancedButton>
-      </EnhancedCard>
-    </motion.div>
-  );
-}
-
-function UserList({ users, onSelect }: { users: UserWithMatch[]; onSelect: (user: UserWithMatch) => void }) {
-  return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={staggerList}
-    >
-      <h2 className="text-2xl font-bold mb-4">Suggested Matches</h2>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {users.map((user) => (
-          <motion.div key={user.id} variants={slideUp}>
-            <EnhancedCard 
-              className="match-card"
-              onClick={() => onSelect(user)}
-              interactive
-            >
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12">
-                  <img src={user.photoUrl} alt={user.name} />
-                </Avatar>
-                <div className="flex-1">
-                  <h3 className="font-bold">{user.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {user.age} • {user.gender} • {user.location}
-                  </p>
-                  <div className="mt-2">
-                    <span className="inline-block px-2 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full">
-                      {user.matchPercentage}% Match
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </EnhancedCard>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-function UserProfile({ user, onClose }: { user: UserWithMatch; onClose: () => void }) {
-  return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={slideUp}
-    >
-      <EnhancedCard>
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <img src={user.photoUrl} alt={user.name} />
-            </Avatar>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="p-6">
+          <h1 className="text-2xl font-bold mb-4">{isLogin ? "Login" : "Register"}</h1>
+          <form onSubmit={handleSubmit(isLogin ? onLogin : onRegister)} className="space-y-4">
             <div>
-              <h2 className="text-2xl font-bold">{user.name}</h2>
-              <p className="text-gray-500">
-                {user.age} • {user.gender} • {user.location}
-              </p>
-              <span className="inline-block px-2 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full mt-2">
-                {user.matchPercentage}% Match
-              </span>
+              <Input 
+                placeholder="Username" 
+                {...register("username", { required: "Username is required" })} 
+              />
+              {errors.username && (
+                <p className="text-sm text-red-500 mt-1">{errors.username.message as string}</p>
+              )}
             </div>
-          </div>
-          <EnhancedButton variant="outline" onClick={onClose}>Close</EnhancedButton>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-bold mb-2">About</h3>
-            <p className="text-gray-700">{user.publicDescription}</p>
-          </div>
-          <div>
-            <h3 className="font-bold mb-2">Social</h3>
-            <p className="text-gray-700">{user.socialIds}</p>
-          </div>
-        </div>
-      </EnhancedCard>
-    </motion.div>
+            <div>
+              <Input 
+                type="password" 
+                placeholder="Password" 
+                {...register("password", { required: "Password is required" })} 
+              />
+              {errors.password && (
+                <p className="text-sm text-red-500 mt-1">{errors.password.message as string}</p>
+              )}
+            </div>
+            {!isLogin && (
+              <>
+                <div>
+                  <Input 
+                    placeholder="Name" 
+                    {...register("name", { required: "Name is required" })} 
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-red-500 mt-1">{errors.name.message as string}</p>
+                  )}
+                </div>
+                <div>
+                  <Input 
+                    type="number" 
+                    placeholder="Age" 
+                    {...register("age", { 
+                      required: "Age is required",
+                      min: { value: 18, message: "Must be 18 or older" }
+                    })} 
+                  />
+                  {errors.age && (
+                    <p className="text-sm text-red-500 mt-1">{errors.age.message as string}</p>
+                  )}
+                </div>
+                <div>
+                  <Input 
+                    placeholder="Location" 
+                    {...register("location", { required: "Location is required" })} 
+                  />
+                  {errors.location && (
+                    <p className="text-sm text-red-500 mt-1">{errors.location.message as string}</p>
+                  )}
+                </div>
+                <div>
+                  <Input 
+                    placeholder="Gender" 
+                    {...register("gender", { required: "Gender is required" })} 
+                  />
+                  {errors.gender && (
+                    <p className="text-sm text-red-500 mt-1">{errors.gender.message as string}</p>
+                  )}
+                </div>
+              </>
+            )}
+            <Button type="submit" className="w-full">
+              {isLogin ? "Login" : "Register"}
+            </Button>
+          </form>
+          <Button
+            variant="link"
+            className="mt-4"
+            onClick={() => setIsLogin(!isLogin)}
+          >
+            {isLogin ? "Need an account?" : "Already have an account?"}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -499,8 +395,80 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
           Receive weekly match recommendations via email
         </label>
       </div>
-      <EnhancedButton type="submit">Update Profile</EnhancedButton>
+      <Button type="submit">Update Profile</Button>
     </form>
+  );
+}
+
+function UserList({ users, onSelect }: { users: UserWithMatch[]; onSelect: (user: UserWithMatch) => void }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">Suggested Matches</h2>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {users.map((user) => (
+          <Card 
+            key={user.id} 
+            className="cursor-pointer hover:shadow-lg transition-shadow match-card" 
+            onClick={() => onSelect(user)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12">
+                  <img src={user.photoUrl} alt={user.name} />
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="font-bold">{user.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    {user.age} • {user.gender} • {user.location}
+                  </p>
+                  <div className="mt-2">
+                    <span className="inline-block px-2 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full">
+                      {user.matchPercentage}% Match
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function UserProfile({ user, onClose }: { user: UserWithMatch; onClose: () => void }) {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-20 w-20">
+              <img src={user.photoUrl} alt={user.name} />
+            </Avatar>
+            <div>
+              <h2 className="text-2xl font-bold">{user.name}</h2>
+              <p className="text-gray-500">
+                {user.age} • {user.gender} • {user.location}
+              </p>
+              <span className="inline-block px-2 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full mt-2">
+                {user.matchPercentage}% Match
+              </span>
+            </div>
+          </div>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-bold mb-2">About</h3>
+            <p className="text-gray-700">{user.publicDescription}</p>
+          </div>
+          <div>
+            <h3 className="font-bold mb-2">Social</h3>
+            <p className="text-gray-700">{user.socialIds}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

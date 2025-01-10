@@ -32,16 +32,22 @@ export async function getSuggestions(query: string): Promise<LocationSuggestion[
         maxRows: 5,
         username: env.GEONAMES_USERNAME,
         style: 'FULL',
-        featureClass: 'P'
+        featureClass: 'P',
+        orderby: 'population',
+        cities: 'cities1000'
       }
     });
 
-    return response.data.geonames.map((place: any) => ({
-      name: place.name,
-      fullName: `${place.name}, ${place.countryName}`,
-      latitude: parseFloat(place.lat),
-      longitude: parseFloat(place.lng)
-    }));
+    if (!response.data?.geonames) return [];
+
+    return response.data.geonames
+      .filter((place: any) => place.name && place.countryName)
+      .map((place: any) => ({
+        name: place.name,
+        fullName: `${place.name}, ${place.countryName}`,
+        latitude: parseFloat(place.lat),
+        longitude: parseFloat(place.lng)
+      }));
   } catch (error) {
     console.error('GeoNames API error:', error);
     return [];

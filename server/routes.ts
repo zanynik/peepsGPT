@@ -146,15 +146,19 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/locations/suggest", async (req, res) => {
     try {
       const { q } = req.query;
-      if (typeof q !== 'string') {
-        return res.status(400).send("Query parameter required");
+      if (typeof q !== 'string' || q.length < 2) {
+        return res.status(400).json({ suggestions: [] });
       }
       
       const suggestions = await getSuggestions(q);
-      res.json(suggestions);
+      if (!suggestions || suggestions.length === 0) {
+        return res.json({ suggestions: [] });
+      }
+      
+      res.json({ suggestions });
     } catch (error: any) {
       console.error("Location suggestion error:", error);
-      res.status(500).send(error.message || "Server error");
+      res.json({ suggestions: [] });
     }
   });
 

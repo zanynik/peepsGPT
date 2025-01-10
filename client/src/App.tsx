@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sun, Moon, Search } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Notes } from "@/components/ui/note";
 import {
@@ -17,7 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, HelpCircle, Filter } from "lucide-react";
+import Joyride, { Step, CallBackProps, STATUS } from "react-joyride";
 import type { User, Gender } from "@db/schema";
 
 interface UserWithMatch extends User {
@@ -25,13 +26,6 @@ interface UserWithMatch extends User {
 }
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showAuthForm, setShowAuthForm] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
   useEffect(() => {
     const theme = localStorage.getItem('theme') || 'light';
     if (theme === 'dark') {
@@ -39,21 +33,60 @@ function App() {
     }
   }, []);
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithMatch | null>(null);
+  const [runTutorial, setRunTutorial] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: currentUser, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
     enabled: isLoggedIn,
   });
 
-  const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
-    queryKey: ["/api/users"],
-    queryFn: async () => {
-      // For non-logged in users, fetch random profiles
-      const endpoint = isLoggedIn ? '/api/users' : '/api/users/random';
-      const res = await fetch(endpoint);
-      if (!res.ok) throw new Error("Failed to fetch users");
-      return res.json();
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
+    if (isLoggedIn && !hasSeenTutorial) {
+      setRunTutorial(true);
+    }
+  }, [isLoggedIn]);
+
+  const tutorialSteps: Step[] = [
+    {
+      target: ".profile-section",
+      content:
+        "Welcome to the matching platform! This is your profile section where you can edit your details and preferences.",
+      disableBeacon: true,
     },
-  });
+    {
+      target: ".photo-upload",
+      content:
+        "Add a photo to make your profile more appealing. You can upload an image or provide a URL.",
+    },
+    {
+      target: ".matches-section",
+      content:
+        "Here you can see your potential matches, sorted by compatibility percentage.",
+    },
+    {
+      target: ".match-card",
+      content:
+        "Click on any profile card to view detailed information about that person.",
+    },
+    {
+      target: ".social-info",
+      content:
+        "Add your social media handles to let others connect with you on different platforms.",
+    },
+  ];
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
+      localStorage.setItem("hasSeenTutorial", "true");
+      setRunTutorial(false);
+    }
+  };
 
   const loginMutation = useMutation({
     mutationFn: async (data: { username: string; password: string }) => {
@@ -67,7 +100,6 @@ function App() {
     },
     onSuccess: () => {
       setIsLoggedIn(true);
-      setShowAuthForm(false);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: (error) => {
@@ -87,7 +119,6 @@ function App() {
     },
     onSuccess: () => {
       setIsLoggedIn(true);
-      setShowAuthForm(false);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: (error) => {
@@ -114,6 +145,14 @@ function App() {
     },
   });
 
+  if (!isLoggedIn) {
+    return (
+      <AuthForm
+        onLogin={loginMutation.mutate}
+        onRegister={registerMutation.mutate}
+      />
+    );
+  }
 
   if (userLoading) {
     return (
@@ -124,126 +163,81 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 max-w-screen-2xl items-center">
-          <div className="mr-4 flex">
-            <a className="mr-6 flex items-center space-x-2" href="/">
-              <span className="hidden font-bold sm:inline-block">
-                Professional Network
-              </span>
-            </a>
-          </div>
-          <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-            <div className="w-full flex-1 md:w-auto md:flex-none">
-              {isLoggedIn && (
-                <Button variant="outline" className="w-full" onClick={() => queryClient.invalidateQueries()}>
-                  Refresh Matches
-                </Button>
-              )}
-            </div>
-            <nav className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  document.documentElement.classList.toggle('dark');
-                  localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-                }}
-              >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
-              </Button>
-              {!isLoggedIn && (
-                <>
-                  <Button variant="ghost" onClick={() => { setShowAuthForm(true); setIsRegister(false); }}>
-                    Log in
-                  </Button>
-                  <Button onClick={() => { setShowAuthForm(true); setIsRegister(true); }}>
-                    Sign up
-                  </Button>
-                </>
-              )}
-            </nav>
+    <>
+      <Joyride
+        steps={tutorialSteps}
+        run={runTutorial}
+        continuous
+        showProgress
+        showSkipButton
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: "#000",
+          },
+        }}
+      />
+
+      <div className="container mx-auto p-4 max-w-4xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Matching Platform</h1>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+              }}
+            >
+              <Sun className="h-4 w-4 dark:hidden" />
+              <Moon className="h-4 w-4 hidden dark:block" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRunTutorial(true)}
+            >
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Tutorial
+            </Button>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="flex min-h-screen flex-col items-center px-4 pt-24 pb-16">
-        <div className="mx-auto w-full max-w-2xl">
-          {/* Search Section */}
-          <div className="rounded-lg border bg-background p-8 mb-8 text-center">
-            <h1 className="mb-6 text-3xl font-bold">
-              What kind of people do you want to connect with?
-            </h1>
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                className="pl-10 pr-4 py-6 text-lg"
-                placeholder="Describe your ideal connections..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
+        <div className="space-y-8">
+          {currentUser && (
+            <Card className="profile-section">
+              <CardContent className="p-6">
+                <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
+                <ProfileForm
+                  user={currentUser}
+                  onSubmit={updateProfileMutation.mutate}
+                />
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Profile Suggestions */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">
-              {isLoggedIn ? "Recommended Connections" : "Featured Profiles"}
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {users.map((user) => (
-                <Card
-                  key={user.id}
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                >
-                  <CardContent className="p-4">
-                    <div className="match-card-cover" />
-                    <div className="relative">
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12">
-                          <img src={user.photoUrl} alt={user.name} />
-                        </Avatar>
-                        <div className="flex-1">
-                          <h3 className="font-bold">{user.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {user.age} • {user.gender} • {user.location}
-                          </p>
-                          {isLoggedIn && user.matchPercentage && (
-                            <div className="mt-2">
-                              <span className="inline-block px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
-                                {user.matchPercentage}% Match
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+          {selectedUser ? (
+            <UserProfile
+              user={selectedUser}
+              onClose={() => setSelectedUser(null)}
+            />
+          ) : (
+            <div className="matches-section">
+              <UserList onSelect={setSelectedUser} />
             </div>
-          </div>
+          )}
         </div>
-      </main>
-
-      {/* Auth Modal */}
-      {showAuthForm && (
-        <AuthForm
-          isRegister={isRegister}
-          onClose={() => setShowAuthForm(false)}
-          onLogin={loginMutation.mutate}
-          onRegister={registerMutation.mutate}
-        />
-      )}
-    </div>
+      </div>
+    </>
   );
 }
 
-function AuthForm({ isRegister, onClose, onLogin, onRegister }: any) {
+function AuthForm({ onLogin, onRegister }: any) {
+  const [isLogin, setIsLogin] = useState(true);
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const {
     register,
     handleSubmit,
@@ -253,99 +247,209 @@ function AuthForm({ isRegister, onClose, onLogin, onRegister }: any) {
 
   const genderOptions: Gender[] = ["Male", "Female", "Other"];
 
-  const handleGenderChange = (value: Gender) => {
+  const handleGenderChange = (value: string) => {
     setValue("gender", value, { shouldValidate: true });
   };
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm">
-      <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg">
-        <div className="flex flex-col space-y-1.5 text-center sm:text-left">
-          <h2 className="text-2xl font-semibold leading-none tracking-tight">
-            {isRegister ? "Create an Account" : "Welcome Back"}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {isRegister
-              ? "Sign up to connect with like-minded professionals"
-              : "Sign in to your account"}
-          </p>
-        </div>
-        <form
-          onSubmit={handleSubmit(isRegister ? onRegister : onLogin)}
-          className="space-y-4"
-        >
-          <div className="space-y-4">
-            <Input
-              placeholder="Username"
-              {...register("username", { required: "Username is required" })}
-            />
-            {errors.username && (
-              <p className="text-sm text-destructive">
-                {errors.username.message as string}
-              </p>
-            )}
-            <Input
-              type="password"
-              placeholder="Password"
-              {...register("password", { required: "Password is required" })}
-            />
-            {errors.password && (
-              <p className="text-sm text-destructive">
-                {errors.password.message as string}
-              </p>
-            )}
-            {isRegister && (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="p-6">
+          <div className="w-full max-w-md bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-6 mb-8 shadow-sm">
+            <h2 className="text-2xl font-bold mb-3">Welcome to our "Connections" Platform!</h2>
+            <p className="text-gray-700 mb-2">
+              Connect with like-minded individuals who share your passions and interests. Our platform helps you find meaningful connections based on what matters most to you.
+            </p>
+            <p className="text-gray-700">
+              Share about yourself in your profile - your interests, hobbies, and what drives you - AI will use it to connect you with the right people. You can filter based on location, age, and most importantly, the passions you describe in your profile.
+            </p>
+          </div>
+          <h1 className="text-2xl font-bold mb-4">
+            {isLogin ? "Login" : "Register"}
+          </h1>
+          <form
+            onSubmit={handleSubmit(isLogin ? onLogin : onRegister)}
+            className="space-y-4"
+          >
+            <div>
+              <Input
+                placeholder="Username"
+                {...register("username", { required: "Username is required" })}
+              />
+              {errors.username && (
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.username.message as string}
+                </p>
+              )}
+            </div>
+            <div>
+              <Input
+                type="password"
+                placeholder="Password"
+                {...register("password", { required: "Password is required" })}
+              />
+              {errors.password && (
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.password.message as string}
+                </p>
+              )}
+            </div>
+            {!isLogin && (
               <>
-                <Input
-                  placeholder="Name"
-                  {...register("name", { required: "Name is required" })}
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive">
-                    {errors.name.message as string}
-                  </p>
-                )}
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: "Invalid email address",
-                    },
-                  })}
-                />
-                {errors.email && (
-                  <p className="text-sm text-destructive">
-                    {errors.email.message as string}
-                  </p>
-                )}
-                <Select onValueChange={handleGenderChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {genderOptions.map((gender) => (
-                      <SelectItem key={gender} value={gender}>
-                        {gender}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    {...register("email", { 
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Invalid email address"
+                      }
+                    })}
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.email.message as string}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Input
+                    placeholder="Name"
+                    {...register("name", { required: "Name is required" })}
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.name.message as string}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Input
+                    type="number"
+                    placeholder="Age"
+                    {...register("age", {
+                      required: "Age is required",
+                      min: { value: 18, message: "Must be 18 or older" },
+                    })}
+                  />
+                  {errors.age && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.age.message as string}
+                    </p>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    placeholder="Location"
+                    {...register("location", { required: "Location is required" })}
+                    onChange={async (e) => {
+                      const query = e.target.value;
+                      setValue('location', query);
+                      if (query.length >= 2) {
+                        try {
+                          const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
+                          const data = await response.json();
+                          setLocationSuggestions(data.suggestions || []);
+                          setShowSuggestions(true);
+                        } catch (error) {
+                          console.error('Error fetching locations:', error);
+                          setLocationSuggestions([]);
+                          setShowSuggestions(false);
+                        }
+                      } else {
+                        setLocationSuggestions([]);
+                        setShowSuggestions(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                        e.preventDefault();
+                        const newIndex = e.key === "ArrowDown"
+                          ? Math.min(selectedIndex + 1, locationSuggestions.length - 1)
+                          : Math.max(selectedIndex - 1, -1);
+                        setSelectedIndex(newIndex);
+                      } else if (e.key === "Enter" && selectedIndex >= 0) {
+                        e.preventDefault();
+                        const selected = locationSuggestions[selectedIndex];
+                        setValue("location", selected.fullName);
+                        setValue("latitude", selected.latitude.toString());
+                        setValue("longitude", selected.longitude.toString());
+                        setShowSuggestions(false);
+                      }
+                    }}
+                  />
+                  {showSuggestions && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {locationSuggestions.length === 0 ? (
+                        <div className="p-2 text-gray-500 italic">No results found</div>
+                      ) : (
+                        locationSuggestions.map((suggestion, index) => (
+                          <div
+                            key={`${suggestion.name}-${index}`}
+                            className={`p-2 cursor-pointer hover:bg-gray-100 ${
+                              index === selectedIndex ? "bg-gray-200" : ""
+                            }`}
+                            onClick={() => {
+                              setValue("location", suggestion.fullName);
+                              setValue("latitude", suggestion.latitude.toString());
+                              setValue("longitude", suggestion.longitude.toString());
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            {suggestion.fullName}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  {errors.location && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.location.message as string}
+                    </p>
+                  )}
+                  <input type="hidden" {...register("latitude")} />
+                  <input type="hidden" {...register("longitude")} />
+                </div>
+                <div>
+                  <Select onValueChange={handleGenderChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {genderOptions.map((gender) => (
+                        <SelectItem key={gender} value={gender}>
+                          {gender}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <input
+                    type="hidden"
+                    {...register("gender", { required: "Gender is required" })}
+                  />
+                  {errors.gender && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.gender.message as string}
+                    </p>
+                  )}
+                </div>
               </>
             )}
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
+            <Button type="submit" className="w-full">
+              {isLogin ? "Login" : "Register"}
             </Button>
-            <Button type="submit">
-              {isRegister ? "Create Account" : "Sign In"}
-            </Button>
-          </div>
-        </form>
-      </div>
+          </form>
+          <Button
+            variant="link"
+            className="mt-4"
+            onClick={() => setIsLogin(!isLogin)}
+          >
+            {isLogin ? "Need an account?" : "Already have an account?"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -559,7 +663,8 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
             type="public"
             notes={watch("publicDescription")?.split("\n").filter(Boolean) || []}
             onAdd={(note) => {
-              setValue("publicDescription", note);
+              const currentNotes = watch("publicDescription")?.split("\n").filter(Boolean) || [];
+              setValue("publicDescription", [...currentNotes, note].join("\n"));
             }}
             onDelete={(index) => {
               const currentNotes = watch("publicDescription")?.split("\n").filter(Boolean) || [];
@@ -577,7 +682,8 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
             type="private"
             notes={watch("privateDescription")?.split("\n").filter(Boolean) || []}
             onAdd={(note) => {
-              setValue("privateDescription", note);
+              const currentNotes = watch("privateDescription")?.split("\n").filter(Boolean) || [];
+              setValue("privateDescription", [...currentNotes, note].join("\n"));
             }}
             onDelete={(index) => {
               const currentNotes = watch("privateDescription")?.split("\n").filter(Boolean) || [];

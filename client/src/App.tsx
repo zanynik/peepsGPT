@@ -388,27 +388,28 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
         )}
       </div>
       <div className="relative">
-        <Input
-          placeholder="Location"
-          {...register("location", { required: "Location is required" })}
-          onChange={async (e) => {
-            const query = e.target.value;
-            setValue('location', query);
-            if (query.length >= 2) {
-              try {
-                const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
-                const data = await response.json();
-                console.log('Location suggestions:', data);
-                setLocationSuggestions(data.suggestions || []);
-                setShowSuggestions(true);
-              } catch (error) {
-                console.error('Error fetching locations:', error);
+        <div className="flex items-center">
+          <Input
+            placeholder="Location"
+            {...register("location", { required: "Location is required" })}
+            onChange={async (e) => {
+              const query = e.target.value;
+              setValue('location', query);
+              if (query.length >= 2) {
+                try {
+                  setShowSuggestions(true);
+                  const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
+                  const data = await response.json();
+                  setLocationSuggestions(data.suggestions || []);
+                } catch (error) {
+                  console.error('Error fetching locations:', error);
+                  setLocationSuggestions([]);
+                }
+              } else {
+                setLocationSuggestions([]);
+                setShowSuggestions(false);
               }
-            } else {
-              setLocationSuggestions([]);
-              setShowSuggestions(false);
-            }
-          }}
+            }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
               e.preventDefault();
@@ -426,24 +427,28 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
             }
           }}
         />
-        {showSuggestions && locationSuggestions.length > 0 && (
+        {showSuggestions && (
           <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-            {locationSuggestions.map((suggestion, index) => (
-              <div
-                key={`${suggestion.name}-${index}`}
-                className={`p-2 cursor-pointer hover:bg-gray-100 ${
-                  index === selectedIndex ? 'bg-gray-200' : ''
-                }`}
-                onClick={() => {
-                  setValue('location', suggestion.fullName);
-                  setValue('latitude', suggestion.latitude.toString());
-                  setValue('longitude', suggestion.longitude.toString());
-                  setShowSuggestions(false);
-                }}
-              >
-                {suggestion.fullName}
-              </div>
-            ))}
+            {locationSuggestions.length === 0 ? (
+              <div className="p-2 text-gray-500 italic">No results found</div>
+            ) : (
+              locationSuggestions.map((suggestion, index) => (
+                <div
+                  key={`${suggestion.name}-${index}`}
+                  className={`p-2 cursor-pointer hover:bg-gray-100 ${
+                    index === selectedIndex ? 'bg-gray-200' : ''
+                  }`}
+                  onClick={() => {
+                    setValue('location', suggestion.fullName);
+                    setValue('latitude', suggestion.latitude.toString());
+                    setValue('longitude', suggestion.longitude.toString());
+                    setShowSuggestions(false);
+                  }}
+                >
+                  {suggestion.fullName}
+                </div>
+              ))
+            )}
           </div>
         )}
         {errors.location && (

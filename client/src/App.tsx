@@ -282,6 +282,24 @@ function AuthForm({ onLogin, onRegister }: any) {
               <>
                 <div>
                   <Input
+                    type="email"
+                    placeholder="Email"
+                    {...register("email", { 
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Invalid email address"
+                      }
+                    })}
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.email.message as string}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Input
                     placeholder="Name"
                     {...register("name", { required: "Name is required" })}
                   />

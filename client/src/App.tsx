@@ -4,9 +4,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { Home } from "./pages/Home";
 import { Profile } from "./pages/Profile";
+import { useUser } from "@/hooks/use-user";
+import { Loader2 } from "lucide-react";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, isLoading } = useUser();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <Switch>
@@ -14,7 +24,7 @@ function App() {
       <Route 
         path="/profile" 
         component={() => 
-          isLoggedIn ? <Profile /> : <Home />
+          user ? <Profile /> : <Home />
         } 
       />
       <Route component={NotFound} />

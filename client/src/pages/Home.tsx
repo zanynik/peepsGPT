@@ -4,22 +4,35 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
-import { Send, HelpCircle } from "lucide-react";
+import { Send, HelpCircle, LogOut } from "lucide-react";
+import { AuthForm } from "@/components/AuthForm";
+import { useUser } from "@/hooks/use-user";
+import { useLocation } from "wouter";
 
 interface User {
   id: number;
   username: string;
+  matchPercentage?: number;
   // Add other user fields as needed
 }
 
 export function Home() {
   const [searchQuery, setSearchQuery] = useState("");
-  const isAuthenticated = false; // TODO: Replace with actual auth state
+  const { user, logout } = useUser();
+  const [, setLocation] = useLocation();
 
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["/api/users/random"],
-    enabled: !isAuthenticated,
+    queryKey: [user ? "/api/users/matched" : "/api/users/random"],
+    enabled: true,
   });
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  const handleProfileClick = () => {
+    setLocation("/profile");
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -30,9 +43,28 @@ export function Home() {
             <HelpCircle className="h-5 w-5" />
             <h1 className="text-xl font-semibold">Professional Network</h1>
           </div>
-          <div className="flex gap-4">
-            <Button variant="ghost">Log in</Button>
-            <Button>Sign up</Button>
+          <div className="flex gap-4 items-center">
+            {user ? (
+              <>
+                <Button variant="ghost" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Log out
+                </Button>
+                <Avatar 
+                  className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary"
+                  onClick={handleProfileClick}
+                >
+                  <div className="bg-primary/10 w-full h-full flex items-center justify-center">
+                    {user.username[0].toUpperCase()}
+                  </div>
+                </Avatar>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost">Log in</Button>
+                <Button>Sign up</Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -70,8 +102,9 @@ export function Home() {
           <Button variant="outline" size="sm">Analyze data</Button>
         </div>
 
-        {/* User Cards Grid */}
-        {users.length > 0 && (
+        {!user ? (
+          <AuthForm />
+        ) : users.length > 0 && (
           <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {users.map((user) => (
               <Card key={user.id} className="overflow-hidden">
@@ -87,6 +120,11 @@ export function Home() {
                       <p className="text-sm text-muted-foreground">
                         Software Engineer • San Francisco
                       </p>
+                      {user.matchPercentage && (
+                        <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                          {user.matchPercentage}% Match
+                        </span>
+                      )}
                     </div>
                   </div>
                 </CardContent>

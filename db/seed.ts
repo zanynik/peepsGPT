@@ -228,7 +228,9 @@ const mbtiProfiles = [
 
 async function seed() {
   try {
-    // Clear existing users
+    // Clear existing matches first
+    await db.delete(matches);
+    // Then clear existing users
     await db.delete(users);
     
     // Insert new users

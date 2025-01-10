@@ -689,6 +689,7 @@ function UserList({
   filters: any;
   setFilters: any;
 }) {
+  const [showFilters, setShowFilters] = useState(false);
   return (
     <div>
       <div className="mb-6">

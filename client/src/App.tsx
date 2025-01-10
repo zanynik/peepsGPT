@@ -145,94 +145,93 @@ function App() {
     },
   });
 
-if (!isLoggedIn) {
+  if (!isLoggedIn) {
+    return (
+      <AuthForm
+        onLogin={loginMutation.mutate}
+        onRegister={registerMutation.mutate}
+      />
+    );
+  }
+
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <AuthForm
-      onLogin={loginMutation.mutate}
-      onRegister={registerMutation.mutate}
-    />
-  );
-}
+    <>
+      <Joyride
+        steps={tutorialSteps}
+        run={runTutorial}
+        continuous
+        showProgress
+        showSkipButton
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: "#000",
+          },
+        }}
+      />
 
-if (userLoading) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="h-8 w-8 animate-spin" />
-    </div>
-  );
-}
+      <div className="container mx-auto p-4 max-w-4xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Matching Platform</h1>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+              }}
+            >
+              <Sun className="h-4 w-4 dark:hidden" />
+              <Moon className="h-4 w-4 hidden dark:block" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRunTutorial(true)}
+            >
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Tutorial
+            </Button>
+          </div>
+        </div>
 
-return (
-  <>
-    <Joyride
-      steps={tutorialSteps}
-      run={runTutorial}
-      continuous
-      showProgress
-      showSkipButton
-      callback={handleJoyrideCallback}
-      styles={{
-        options: {
-          primaryColor: "#000",
-        },
-      }}
-    />
+        <div className="space-y-8">
+          {currentUser && (
+            <Card className="profile-section">
+              <CardContent className="p-6">
+                <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
+                <ProfileForm
+                  user={currentUser}
+                  onSubmit={updateProfileMutation.mutate}
+                />
+              </CardContent>
+            </Card>
+          )}
 
-    <div className="container mx-auto p-4 max-w-4xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Matching Platform</h1>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              document.documentElement.classList.toggle('dark');
-              localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-            }}
-          >
-            <Sun className="h-4 w-4 dark:hidden" />
-            <Moon className="h-4 w-4 hidden dark:block" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setRunTutorial(true)}
-          >
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Tutorial
-          </Button>
+          {selectedUser ? (
+            <UserProfile
+              user={selectedUser}
+              onClose={() => setSelectedUser(null)}
+            />
+          ) : (
+            <div className="matches-section">
+              <UserList onSelect={setSelectedUser} />
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="space-y-8">
-        {currentUser && (
-          <Card className="profile-section">
-            <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
-              <ProfileForm
-                user={currentUser}
-                onSubmit={updateProfileMutation.mutate}
-              />
-            </CardContent>
-          </Card>
-        )}
-
-        {selectedUser ? (
-          <UserProfile
-            user={selectedUser}
-            onClose={() => setSelectedUser(null)}
-          />
-        ) : (
-          <div className="matches-section">
-            <UserList onSelect={setSelectedUser} />
-          </div>
-        )}
-      </div>
-    </div>
-  </>
-);
+    </>
+  );
 }
-
 
 function AuthForm({ onLogin, onRegister }: any) {
   const [isLogin, setIsLogin] = useState(true);
@@ -463,6 +462,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
     watch,
     formState: { errors },
   } = useForm({ defaultValues: user });
+
   const [photoPreview, setPhotoPreview] = useState(user.photoUrl);
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -492,7 +492,6 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
       try {
         const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
         const data = await response.json();
-        console.log('Location Suggestions:', data.suggestions); // Log the suggestions
         setLocationSuggestions(data.suggestions || []);
         setShowSuggestions(true);
       } catch (error) {

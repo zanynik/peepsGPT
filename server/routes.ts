@@ -37,6 +37,27 @@ const crypto = {
   },
 };
 
+
+  app.get("/api/locations/suggest", async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (typeof q !== 'string' || q.length < 2) {
+        return res.status(400).json({ suggestions: [] });
+      }
+      
+      const suggestions = await getSuggestions(q);
+      if (!suggestions || suggestions.length === 0) {
+        return res.json({ suggestions: [] });
+      }
+      
+      res.json({ suggestions });
+    } catch (error: any) {
+      console.error("Location suggestion error:", error);
+      res.json({ suggestions: [] });
+    }
+  });
+
+
 export function registerRoutes(app: Express): Server {
   const MemoryStore = createMemoryStore(session);
   app.use(
@@ -141,27 +162,6 @@ export function registerRoutes(app: Express): Server {
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
     }
-
-
-  app.get("/api/locations/suggest", async (req, res) => {
-    try {
-      const { q } = req.query;
-      if (typeof q !== 'string' || q.length < 2) {
-        return res.status(400).json({ suggestions: [] });
-      }
-      
-      const suggestions = await getSuggestions(q);
-      if (!suggestions || suggestions.length === 0) {
-        return res.json({ suggestions: [] });
-      }
-      
-      res.json({ suggestions });
-    } catch (error: any) {
-      console.error("Location suggestion error:", error);
-      res.json({ suggestions: [] });
-    }
-  });
-
 
     try {
       const user = await db.query.users.findFirst({

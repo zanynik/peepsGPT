@@ -37,16 +37,21 @@ function App() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
-    minAge: "18",
-    maxAge: "75",
+    minAge: 18,
+    maxAge: 75,
     gender: "all",
-    maxDistance: "100",
+    maxDistance: 100,
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<
     UserWithMatch[]
   >({
-    queryKey: ["/api/users", filters],
+    queryKey: ["/api/users", {
+      minAge: filters.minAge,
+      maxAge: filters.maxAge,
+      gender: filters.gender,
+      maxDistance: filters.maxDistance
+    }],
     enabled: isLoggedIn,
   });
 
@@ -289,7 +294,7 @@ function AuthForm({ onLogin, onRegister }: any) {
                   <Input
                     type="email"
                     placeholder="Email"
-                    {...register("email", { 
+                    {...register("email", {
                       required: "Email is required",
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -479,7 +484,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
       try {
         const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
         const data = await response.json();
-        console.log('Location Suggestions:', data.suggestions); // Log the suggestions
+        console.log('Location Suggestions:', data.suggestions); 
         setLocationSuggestions(data.suggestions || []);
         setShowSuggestions(true);
       } catch (error) {
@@ -692,10 +697,10 @@ function UserList({
 }) {
   const [showFilters, setShowFilters] = useState(false);
   const [tempFilters, setTempFilters] = useState({
-    minAge: "18",
-    maxAge: "75",
+    minAge: 18,
+    maxAge: 75,
     gender: "all",
-    maxDistance: "100",
+    maxDistance: 100,
   });
 
   useEffect(() => {
@@ -704,6 +709,7 @@ function UserList({
 
   const handleApplyFilters = () => {
     setFilters(tempFilters);
+    setShowFilters(false);
   };
 
   return (
@@ -729,9 +735,13 @@ function UserList({
                   min={18}
                   max={100}
                   step={1}
-                  value={[parseInt(tempFilters.minAge), parseInt(tempFilters.maxAge)]}
+                  value={[parseInt(tempFilters.minAge.toString()), parseInt(tempFilters.maxAge.toString())]}
                   onValueChange={([min, max]) =>
-                    setTempFilters({ ...tempFilters, minAge: min.toString(), maxAge: max.toString() })
+                    setTempFilters({
+                      ...tempFilters,
+                      minAge: min,
+                      maxAge: max
+                    })
                   }
                   className="mb-4"
                 />
@@ -745,9 +755,12 @@ function UserList({
                   min={0}
                   max={1000}
                   step={10}
-                  value={[parseInt(tempFilters.maxDistance)]}
+                  value={[parseInt(tempFilters.maxDistance.toString())]}
                   onValueChange={([value]) =>
-                    setTempFilters({ ...tempFilters, maxDistance: value.toString() })
+                    setTempFilters({
+                      ...tempFilters,
+                      maxDistance: value
+                    })
                   }
                   className="mb-4"
                 />

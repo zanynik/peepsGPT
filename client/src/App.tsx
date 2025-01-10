@@ -665,11 +665,11 @@ function UserList({ onSelect }: { onSelect: (user: UserWithMatch) => void }) {
     minAge: "18",
     maxAge: "75",
     gender: "all",
-    maxDistance: "0", // Default to "Any distance"
+    maxDistance: "0",
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
-    queryKey: ["/api/users", filters], // Query key includes filters
+    queryKey: ["/api/users", filters],
     queryFn: async () => {
       const res = await fetch(
         `/api/users?minAge=${filters.minAge}&maxAge=${filters.maxAge}&gender=${filters.gender}&maxDistance=${filters.maxDistance}`
@@ -682,24 +682,16 @@ function UserList({ onSelect }: { onSelect: (user: UserWithMatch) => void }) {
   const [showFilters, setShowFilters] = useState(false);
   const [tempFilters, setTempFilters] = useState({
     ...filters,
-    anyDistance: filters.maxDistance === "0", // Set "Any distance" based on maxDistance
+    anyDistance: filters.maxDistance === "0",
   });
 
-  // Update tempFilters when filters change
-  useEffect(() => {
-    setTempFilters({
-      ...filters,
-      anyDistance: filters.maxDistance === "0",
-    });
-  }, [filters]);
-
-  // Automatically apply filters when tempFilters change
-  useEffect(() => {
+  const handleApplyFilters = () => {
     setFilters({
       ...tempFilters,
       maxDistance: tempFilters.anyDistance ? "0" : tempFilters.maxDistance,
     });
-  }, [tempFilters]);
+    setShowFilters(false);
+  };
 
   if (usersLoading) {
     return (
@@ -723,6 +715,9 @@ function UserList({ onSelect }: { onSelect: (user: UserWithMatch) => void }) {
         {showFilters && (
           <Card className="mt-2">
             <CardContent className="p-4 space-y-6">
+              <div className="flex justify-end">
+                <Button onClick={handleApplyFilters}>Apply Filters</Button>
+              </div>
               {/* Age Range Filter */}
               <div>
                 <div className="flex justify-between mb-2">

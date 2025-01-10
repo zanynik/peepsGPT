@@ -164,7 +164,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const { minAge, maxAge, gender, maxDistance, location } = req.query;
+      const { minAge, maxAge, gender, maxDistance } = req.query;
 
       const currentUser = await db.query.users.findFirst({
         where: eq(users.id, req.session.userId),
@@ -185,7 +185,7 @@ export function registerRoutes(app: Express): Server {
           if (maxAge && user.age > parseInt(maxAge as string)) return false;
 
           // Gender filter
-          if (gender && user.gender !== gender) return false;
+          if (gender && gender !== 'all' && user.gender !== gender) return false;
 
           // Distance filter
           if (maxDistance && currentUser.latitude && currentUser.longitude) {

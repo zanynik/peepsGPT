@@ -482,7 +482,7 @@ function UserList({ users, onSelect, filters, setFilters }: { users: UserWithMat
                     <SelectValue placeholder="Gender" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Any</SelectItem>
+                    <SelectItem value="all">Any</SelectItem>
                     <SelectItem value="Male">Male</SelectItem>
                     <SelectItem value="Female">Female</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>

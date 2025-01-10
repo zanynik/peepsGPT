@@ -460,6 +460,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm({ defaultValues: user });
   const [photoPreview, setPhotoPreview] = useState(user.photoUrl);

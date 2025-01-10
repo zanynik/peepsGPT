@@ -34,11 +34,12 @@ function App() {
     enabled: isLoggedIn,
   });
 
+  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
-    minAge: "",
-    maxAge: "",
+    minAge: "18",
+    maxAge: "100",
     gender: "",
-    maxDistance: "",
+    maxDistance: "100",
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<
@@ -231,6 +232,9 @@ function App() {
 
 function AuthForm({ onLogin, onRegister }: any) {
   const [isLogin, setIsLogin] = useState(true);
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const {
     register,
     handleSubmit,
@@ -324,18 +328,77 @@ function AuthForm({ onLogin, onRegister }: any) {
                     </p>
                   )}
                 </div>
-                <div>
+                <div className="relative">
                   <Input
                     placeholder="Location"
-                    {...register("location", {
-                      required: "Location is required",
-                    })}
+                    {...register("location", { required: "Location is required" })}
+                    onChange={async (e) => {
+                      const query = e.target.value;
+                      setValue('location', query);
+                      if (query.length >= 2) {
+                        try {
+                          const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
+                          const data = await response.json();
+                          setLocationSuggestions(data.suggestions || []);
+                          setShowSuggestions(true);
+                        } catch (error) {
+                          console.error('Error fetching locations:', error);
+                          setLocationSuggestions([]);
+                          setShowSuggestions(false);
+                        }
+                      } else {
+                        setLocationSuggestions([]);
+                        setShowSuggestions(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                        e.preventDefault();
+                        const newIndex = e.key === "ArrowDown"
+                          ? Math.min(selectedIndex + 1, locationSuggestions.length - 1)
+                          : Math.max(selectedIndex - 1, -1);
+                        setSelectedIndex(newIndex);
+                      } else if (e.key === "Enter" && selectedIndex >= 0) {
+                        e.preventDefault();
+                        const selected = locationSuggestions[selectedIndex];
+                        setValue("location", selected.fullName);
+                        setValue("latitude", selected.latitude.toString());
+                        setValue("longitude", selected.longitude.toString());
+                        setShowSuggestions(false);
+                      }
+                    }}
                   />
+                  {showSuggestions && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {locationSuggestions.length === 0 ? (
+                        <div className="p-2 text-gray-500 italic">No results found</div>
+                      ) : (
+                        locationSuggestions.map((suggestion, index) => (
+                          <div
+                            key={`${suggestion.name}-${index}`}
+                            className={`p-2 cursor-pointer hover:bg-gray-100 ${
+                              index === selectedIndex ? "bg-gray-200" : ""
+                            }`}
+                            onClick={() => {
+                              setValue("location", suggestion.fullName);
+                              setValue("latitude", suggestion.latitude.toString());
+                              setValue("longitude", suggestion.longitude.toString());
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            {suggestion.fullName}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                   {errors.location && (
                     <p className="text-sm text-red-500 mt-1">
                       {errors.location.message as string}
                     </p>
                   )}
+                  <input type="hidden" {...register("latitude")} />
+                  <input type="hidden" {...register("longitude")} />
                 </div>
                 <div>
                   <Select onValueChange={handleGenderChange}>
@@ -629,31 +692,47 @@ function UserList({
   return (
     <div>
       <div className="mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter className="h-5 w-5" />
-              <h3 className="font-semibold">Filters</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <Filter className="h-5 w-5" />
+          <span>Filters</span>
+        </Button>
+        {showFilters && (
+          <Card className="mt-2">
+            <CardContent className="p-4 space-y-6">
               <div>
-                <Input
-                  type="number"
-                  placeholder="Min Age"
-                  value={filters.minAge}
-                  onChange={(e) =>
-                    setFilters({ ...filters, minAge: e.target.value })
+                <div className="flex justify-between mb-2">
+                  <span>Age Range</span>
+                  <span>{filters.minAge} - {filters.maxAge}</span>
+                </div>
+                <Slider
+                  min={18}
+                  max={100}
+                  step={1}
+                  value={[parseInt(filters.minAge) || 18, parseInt(filters.maxAge) || 100]}
+                  onValueChange={([min, max]) =>
+                    setFilters({ ...filters, minAge: min.toString(), maxAge: max.toString() })
                   }
+                  className="mb-4"
                 />
               </div>
               <div>
-                <Input
-                  type="number"
-                  placeholder="Max Age"
-                  value={filters.maxAge}
-                  onChange={(e) =>
-                    setFilters({ ...filters, maxAge: e.target.value })
+                <div className="flex justify-between mb-2">
+                  <span>Max Distance</span>
+                  <span>{filters.maxDistance} km</span>
+                </div>
+                <Slider
+                  min={0}
+                  max={1000}
+                  step={10}
+                  value={[parseInt(filters.maxDistance) || 0]}
+                  onValueChange={([value]) =>
+                    setFilters({ ...filters, maxDistance: value.toString() })
                   }
+                  className="mb-4"
                 />
               </div>
               <div>
@@ -674,19 +753,9 @@ function UserList({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Input
-                  type="number"
-                  placeholder="Max Distance (km)"
-                  value={filters.maxDistance}
-                  onChange={(e) =>
-                    setFilters({ ...filters, maxDistance: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <h2 className="text-2xl font-bold mb-4">Suggested Matches</h2>

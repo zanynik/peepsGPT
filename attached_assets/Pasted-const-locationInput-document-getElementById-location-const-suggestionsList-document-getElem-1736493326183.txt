@@ -1,0 +1,99 @@
+const locationInput = document.getElementById('location');
+const suggestionsList = document.getElementById('location-suggestions');
+const loadingIndicator = document.getElementById('location-loading');
+const latitudeInput = document.getElementById('latitude');
+const longitudeInput = document.getElementById('longitude');
+
+function debounce(func, delay) {
+    let timeoutId;
+    return function (...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
+async function fetchLocations(query) {
+    loadingIndicator.classList.remove('hidden');
+    try {
+        const response = await fetch(`/get_locations?q=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching locations:', error);
+        return [];
+    } finally {
+        loadingIndicator.classList.add('hidden');
+    }
+}
+
+function displaySuggestions(locations) {
+    suggestionsList.innerHTML = '';
+    if (locations.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'No results found';
+        li.classList.add('p-2', 'text-gray-500', 'italic');
+        suggestionsList.appendChild(li);
+    } else {
+        locations.forEach(location => {
+            const li = document.createElement('li');
+            li.textContent = location.name;
+            li.classList.add('p-2', 'hover:bg-gray-100', 'cursor-pointer');
+            li.addEventListener('click', () => {
+                locationInput.value = location.name;
+                latitudeInput.value = location.lat;
+                longitudeInput.value = location.lng;
+                suggestionsList.classList.add('hidden');
+            });
+            suggestionsList.appendChild(li);
+        });
+    }
+    suggestionsList.classList.remove('hidden');
+}
+
+const debouncedFetchLocations = debounce(async (query) => {
+    if (query.length < 2) {
+        suggestionsList.classList.add('hidden');
+        return;
+    }
+    const locations = await fetchLocations(query);
+    displaySuggestions(locations);
+}, 300);
+
+locationInput.addEventListener('input', (e) => {
+    debouncedFetchLocations(e.target.value);
+});
+
+locationInput.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const items = suggestionsList.querySelectorAll('li');
+        const currentIndex = Array.from(items).findIndex(item => item.classList.contains('bg-gray-200'));
+        let nextIndex;
+
+        if (e.key === 'ArrowDown') {
+            nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+        } else {
+            nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+        }
+
+        items.forEach(item => item.classList.remove('bg-gray-200'));
+        items[nextIndex].classList.add('bg-gray-200');
+        items[nextIndex].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const selectedItem = suggestionsList.querySelector('.bg-gray-200');
+        if (selectedItem) {
+            locationInput.value = selectedItem.textContent;
+            suggestionsList.classList.add('hidden');
+        }
+    }
+});
+
+document.addEventListener('click', (e) => {
+    if (e.target !== locationInput && e.target !== suggestionsList) {
+        suggestionsList.classList.add('hidden');
+    }
+});

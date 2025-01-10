@@ -3,6 +3,16 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #020817;
+  }
+
+  .dark {
+    --background: #020817;
+    --foreground: #ffffff;
+  }
+
   * {
     @apply border-border;
   }

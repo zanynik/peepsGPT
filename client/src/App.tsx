@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Sun, Moon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import {
   Select,
@@ -24,6 +25,13 @@ interface UserWithMatch extends User {
 }
 
 function App() {
+  useEffect(() => {
+    const theme = localStorage.getItem('theme') || 'light';
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithMatch | null>(null);
   const [runTutorial, setRunTutorial] = useState(false);
@@ -172,14 +180,27 @@ return (
     <div className="container mx-auto p-4 max-w-4xl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Matching Platform</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setRunTutorial(true)}
-        >
-          <HelpCircle className="h-4 w-4 mr-2" />
-          Tutorial
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              document.documentElement.classList.toggle('dark');
+              localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            }}
+          >
+            <Sun className="h-4 w-4 dark:hidden" />
+            <Moon className="h-4 w-4 hidden dark:block" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRunTutorial(true)}
+          >
+            <HelpCircle className="h-4 w-4 mr-2" />
+            Tutorial
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-8">
@@ -635,22 +656,42 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
         </p>
       </div>
       <div>
-        <Textarea
-          placeholder="Public Description"
-          {...register("publicDescription")}
-          className="h-24"
-        />
-        <p className="text-sm text-gray-500 mt-1">
-          This will be visible to other users
-        </p>
+        <div className="space-y-2">
+          <h3 className="font-semibold">Public Notes</h3>
+          <Notes
+            type="public"
+            notes={watch("publicDescription")?.split("\n").filter(Boolean) || []}
+            onAdd={(note) => {
+              const currentNotes = watch("publicDescription")?.split("\n").filter(Boolean) || [];
+              setValue("publicDescription", [...currentNotes, note].join("\n"));
+            }}
+            onDelete={(index) => {
+              const currentNotes = watch("publicDescription")?.split("\n").filter(Boolean) || [];
+              currentNotes.splice(index, 1);
+              setValue("publicDescription", currentNotes.join("\n"));
+            }}
+          />
+          <p className="text-sm text-gray-500">Visible to other users</p>
+        </div>
       </div>
       <div>
-        <Textarea
-          placeholder="Private Description"
-          {...register("privateDescription")}
-          className="h-24"
-        />
-        <p className="text-sm text-gray-500 mt-1">This is just for you</p>
+        <div className="space-y-2">
+          <h3 className="font-semibold">Private Notes</h3>
+          <Notes
+            type="private"
+            notes={watch("privateDescription")?.split("\n").filter(Boolean) || []}
+            onAdd={(note) => {
+              const currentNotes = watch("privateDescription")?.split("\n").filter(Boolean) || [];
+              setValue("privateDescription", [...currentNotes, note].join("\n"));
+            }}
+            onDelete={(index) => {
+              const currentNotes = watch("privateDescription")?.split("\n").filter(Boolean) || [];
+              currentNotes.splice(index, 1);
+              setValue("privateDescription", currentNotes.join("\n"));
+            }}
+          />
+          <p className="text-sm text-gray-500">Only visible to you</p>
+        </div>
       </div>
       <div className="flex items-center space-x-2">
         <input

@@ -410,52 +410,53 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
                 setShowSuggestions(false);
               }
             }}
-          onKeyDown={(e) => {
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-              e.preventDefault();
-              const newIndex = e.key === 'ArrowDown' 
-                ? Math.min(selectedIndex + 1, locationSuggestions.length - 1)
-                : Math.max(selectedIndex - 1, -1);
-              setSelectedIndex(newIndex);
-            } else if (e.key === 'Enter' && selectedIndex >= 0) {
-              e.preventDefault();
-              const selected = locationSuggestions[selectedIndex];
-              setValue('location', selected.fullName);
-              setValue('latitude', selected.latitude.toString());
-              setValue('longitude', selected.longitude.toString());
-              setShowSuggestions(false);
-            }
-          }}
-        />
-        {showSuggestions && (
-          <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-            {locationSuggestions.length === 0 ? (
-              <div className="p-2 text-gray-500 italic">No results found</div>
-            ) : (
-              locationSuggestions.map((suggestion, index) => (
-                <div
-                  key={`${suggestion.name}-${index}`}
-                  className={`p-2 cursor-pointer hover:bg-gray-100 ${
-                    index === selectedIndex ? 'bg-gray-200' : ''
-                  }`}
-                  onClick={() => {
-                    setValue('location', suggestion.fullName);
-                    setValue('latitude', suggestion.latitude.toString());
-                    setValue('longitude', suggestion.longitude.toString());
-                    setShowSuggestions(false);
-                  }}
-                >
-                  {suggestion.fullName}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-        {errors.location && (
-          <p className="text-sm text-red-500 mt-1">{errors.location.message as string}</p>
-        )}
-        <input type="hidden" {...register("latitude")} />
-        <input type="hidden" {...register("longitude")} />
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const newIndex = e.key === 'ArrowDown'
+                  ? Math.min(selectedIndex + 1, locationSuggestions.length - 1)
+                  : Math.max(selectedIndex - 1, -1);
+                setSelectedIndex(newIndex);
+              } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                e.preventDefault();
+                const selected = locationSuggestions[selectedIndex];
+                setValue('location', selected.fullName);
+                setValue('latitude', selected.latitude.toString());
+                setValue('longitude', selected.longitude.toString());
+                setShowSuggestions(false);
+              }
+            }}
+          />
+          {showSuggestions && (
+            <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+              {locationSuggestions.length === 0 ? (
+                <div className="p-2 text-gray-500 italic">No results found</div>
+              ) : (
+                locationSuggestions.map((suggestion, index) => (
+                  <div
+                    key={`${suggestion.name}-${index}`}
+                    className={`p-2 cursor-pointer hover:bg-gray-100 ${
+                      index === selectedIndex ? 'bg-gray-200' : ''
+                    }`}
+                    onClick={() => {
+                      setValue('location', suggestion.fullName);
+                      setValue('latitude', suggestion.latitude.toString());
+                      setValue('longitude', suggestion.longitude.toString());
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    {suggestion.fullName}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+          {errors.location && (
+            <p className="text-sm text-red-500 mt-1">{errors.location.message as string}</p>
+          )}
+          <input type="hidden" {...register("latitude")} />
+          <input type="hidden" {...register("longitude")} />
+        </div>
       </div>
       <div>
         <Select defaultValue={user.gender} onValueChange={handleGenderChange}>

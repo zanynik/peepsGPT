@@ -37,7 +37,7 @@ const crypto = {
   },
 };
 
-
+export function registerRoutes(app: Express): Server {
   app.get("/api/locations/suggest", async (req, res) => {
     try {
       const { q } = req.query;
@@ -56,9 +56,6 @@ const crypto = {
       res.json({ suggestions: [] });
     }
   });
-
-
-export function registerRoutes(app: Express): Server {
   const MemoryStore = createMemoryStore(session);
   app.use(
     session({

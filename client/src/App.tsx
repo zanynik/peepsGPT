@@ -38,8 +38,8 @@ function App() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     minAge: "18",
-    maxAge: "100",
-    gender: "",
+    maxAge: "75",
+    gender: "all",
     maxDistance: "100",
   });
 
@@ -691,6 +691,21 @@ function UserList({
   setFilters: any;
 }) {
   const [showFilters, setShowFilters] = useState(false);
+  const [tempFilters, setTempFilters] = useState({
+    minAge: "18",
+    maxAge: "75",
+    gender: "all",
+    maxDistance: "100",
+  });
+
+  useEffect(() => {
+    setTempFilters(filters);
+  }, [filters]);
+
+  const handleApplyFilters = () => {
+    setFilters(tempFilters);
+  };
+
   return (
     <div>
       <div className="mb-6">
@@ -708,15 +723,15 @@ function UserList({
               <div>
                 <div className="flex justify-between mb-2">
                   <span>Age Range</span>
-                  <span>{filters.minAge} - {filters.maxAge}</span>
+                  <span>{tempFilters.minAge} - {tempFilters.maxAge}</span>
                 </div>
                 <Slider
                   min={18}
                   max={100}
                   step={1}
-                  value={[parseInt(filters.minAge) || 18, parseInt(filters.maxAge) || 100]}
+                  value={[parseInt(tempFilters.minAge), parseInt(tempFilters.maxAge)]}
                   onValueChange={([min, max]) =>
-                    setFilters({ ...filters, minAge: min.toString(), maxAge: max.toString() })
+                    setTempFilters({ ...tempFilters, minAge: min.toString(), maxAge: max.toString() })
                   }
                   className="mb-4"
                 />
@@ -724,24 +739,24 @@ function UserList({
               <div>
                 <div className="flex justify-between mb-2">
                   <span>Max Distance</span>
-                  <span>{filters.maxDistance} km</span>
+                  <span>{tempFilters.maxDistance} km</span>
                 </div>
                 <Slider
                   min={0}
                   max={1000}
                   step={10}
-                  value={[parseInt(filters.maxDistance) || 0]}
+                  value={[parseInt(tempFilters.maxDistance)]}
                   onValueChange={([value]) =>
-                    setFilters({ ...filters, maxDistance: value.toString() })
+                    setTempFilters({ ...tempFilters, maxDistance: value.toString() })
                   }
                   className="mb-4"
                 />
               </div>
               <div>
                 <Select
-                  value={filters.gender}
+                  value={tempFilters.gender}
                   onValueChange={(value) =>
-                    setFilters({ ...filters, gender: value })
+                    setTempFilters({ ...tempFilters, gender: value })
                   }
                 >
                   <SelectTrigger>
@@ -755,6 +770,12 @@ function UserList({
                   </SelectContent>
                 </Select>
               </div>
+              <Button 
+                className="w-full"
+                onClick={handleApplyFilters}
+              >
+                Apply Filters
+              </Button>
             </CardContent>
           </Card>
         )}

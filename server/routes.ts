@@ -44,10 +44,12 @@ export function registerRoutes(app: Express): Server {
       if (typeof q !== 'string' || q.length < 2) {
         return res.status(400).json({ suggestions: [] });
       }
+      
       const suggestions = await getSuggestions(q);
       if (!suggestions || suggestions.length === 0) {
         return res.json({ suggestions: [] });
       }
+      
       res.json({ suggestions });
     } catch (error: any) {
       console.error("Location suggestion error:", error);
@@ -182,12 +184,6 @@ export function registerRoutes(app: Express): Server {
     try {
       const { minAge, maxAge, gender, maxDistance } = req.query;
 
-      // Parse and validate query parameters
-      const parsedMinAge = minAge ? parseInt(minAge as string) : null;
-      const parsedMaxAge = maxAge ? parseInt(maxAge as string) : null;
-      const parsedMaxDistance = maxDistance ? parseInt(maxDistance as string) : null;
-      const parsedGender = gender as string;
-
       const currentUser = await db.query.users.findFirst({
         where: eq(users.id, req.session.userId),
       });
@@ -200,24 +196,31 @@ export function registerRoutes(app: Express): Server {
 
       // Filter users based on criteria
       const filteredUsers = allUsers
-        .filter(user => user.id !== req.session.userId)
-        .filter(user => {
-          // Age filter - only include if age is within range
-          if (parsedMinAge && user.age < parsedMinAge) return false;
-          if (parsedMaxAge && user.age > parsedMaxAge) return false;
+        .filter((user) => user.id !== req.session.userId)
+        .filter((user) => {
+          // Age filter
+          if (minAge && user.age < parseInt(minAge as string)) return false;
+          if (maxAge && user.age > parseInt(maxAge as string)) return false;
 
-          // Gender filter - only include if gender matches or 'all' is selected
-          if (parsedGender && parsedGender !== 'all' && user.gender !== parsedGender) return false;
+          // Gender filter
+          if (gender && gender !== "all" && user.gender !== gender) return false;
 
-          // Distance filter
-          if (parsedMaxDistance && currentUser.latitude && currentUser.longitude && user.latitude && user.longitude) {
+          // Distance filter (skip if maxDistance is "0")
+          if (
+            maxDistance &&
+            maxDistance !== "0" &&
+            currentUser.latitude &&
+            currentUser.longitude &&
+            user.latitude &&
+            user.longitude
+          ) {
             const distance = calculateDistance(
               parseFloat(currentUser.latitude),
               parseFloat(currentUser.longitude),
               parseFloat(user.latitude),
               parseFloat(user.longitude)
             );
-            if (distance > parsedMaxDistance) return false;
+            if (distance > parseInt(maxDistance as string)) return false;
           }
 
           return true;
@@ -250,8 +253,8 @@ export function registerRoutes(app: Express): Server {
         })
       );
 
-      const sortedUsers = usersWithMatches.sort((a, b) =>
-        (b.matchPercentage || 0) - (a.matchPercentage || 0)
+      const sortedUsers = usersWithMatches.sort(
+        (a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0)
       );
 
       res.json(sortedUsers);

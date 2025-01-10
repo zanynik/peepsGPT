@@ -35,26 +35,6 @@ function App() {
     enabled: isLoggedIn,
   });
 
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    minAge: 18,
-    maxAge: 75,
-    gender: "all",
-    maxDistance: 100,
-  });
-
-  const { data: users = [], isLoading: usersLoading } = useQuery<
-    UserWithMatch[]
-  >({
-    queryKey: ["/api/users", {
-      minAge: filters.minAge,
-      maxAge: filters.maxAge,
-      gender: filters.gender,
-      maxDistance: filters.maxDistance
-    }],
-    enabled: isLoggedIn,
-  });
-
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
     if (isLoggedIn && !hasSeenTutorial) {
@@ -156,85 +136,81 @@ function App() {
     },
   });
 
-  if (!isLoggedIn) {
-    return (
-      <AuthForm
-        onLogin={loginMutation.mutate}
-        onRegister={registerMutation.mutate}
-      />
-    );
-  }
-
-  if (userLoading || usersLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
+if (!isLoggedIn) {
   return (
-    <>
-      <Joyride
-        steps={tutorialSteps}
-        run={runTutorial}
-        continuous
-        showProgress
-        showSkipButton
-        callback={handleJoyrideCallback}
-        styles={{
-          options: {
-            primaryColor: "#000",
-          },
-        }}
-      />
-
-      <div className="container mx-auto p-4 max-w-4xl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Matching Platform</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setRunTutorial(true)}
-          >
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Tutorial
-          </Button>
-        </div>
-
-        <div className="space-y-8">
-          {currentUser && (
-            <Card className="profile-section">
-              <CardContent className="p-6">
-                <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
-                <ProfileForm
-                  user={currentUser}
-                  onSubmit={updateProfileMutation.mutate}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {selectedUser ? (
-            <UserProfile
-              user={selectedUser}
-              onClose={() => setSelectedUser(null)}
-            />
-          ) : (
-            <div className="matches-section">
-              <UserList
-                users={users}
-                onSelect={setSelectedUser}
-                filters={filters}
-                setFilters={setFilters}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+    <AuthForm
+      onLogin={loginMutation.mutate}
+      onRegister={registerMutation.mutate}
+    />
   );
 }
+
+if (userLoading) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  );
+}
+
+return (
+  <>
+    <Joyride
+      steps={tutorialSteps}
+      run={runTutorial}
+      continuous
+      showProgress
+      showSkipButton
+      callback={handleJoyrideCallback}
+      styles={{
+        options: {
+          primaryColor: "#000",
+        },
+      }}
+    />
+
+    <div className="container mx-auto p-4 max-w-4xl">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Matching Platform</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setRunTutorial(true)}
+        >
+          <HelpCircle className="h-4 w-4 mr-2" />
+          Tutorial
+        </Button>
+      </div>
+
+      <div className="space-y-8">
+        {currentUser && (
+          <Card className="profile-section">
+            <CardContent className="p-6">
+              <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
+              <ProfileForm
+                user={currentUser}
+                onSubmit={updateProfileMutation.mutate}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {selectedUser ? (
+          <UserProfile
+            user={selectedUser}
+            onClose={() => setSelectedUser(null)}
+          />
+        ) : (
+          <div className="matches-section">
+            <UserList onSelect={setSelectedUser} />
+          </div>
+        )}
+      </div>
+    </div>
+  </>
+);
+}
+
 
 function AuthForm({ onLogin, onRegister }: any) {
   const [isLogin, setIsLogin] = useState(true);
@@ -294,7 +270,7 @@ function AuthForm({ onLogin, onRegister }: any) {
                   <Input
                     type="email"
                     placeholder="Email"
-                    {...register("email", {
+                    {...register("email", { 
                       required: "Email is required",
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -484,7 +460,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
       try {
         const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
         const data = await response.json();
-        console.log('Location Suggestions:', data.suggestions); 
+        console.log('Location Suggestions:', data.suggestions); // Log the suggestions
         setLocationSuggestions(data.suggestions || []);
         setShowSuggestions(true);
       } catch (error) {
@@ -684,39 +660,60 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
   );
 }
 
-function UserList({
-  users,
-  onSelect,
-  filters,
-  setFilters,
-}: {
-  users: UserWithMatch[];
-  onSelect: (user: UserWithMatch) => void;
-  filters: any;
-  setFilters: any;
-}) {
-  const [showFilters, setShowFilters] = useState(false);
-  const [tempFilters, setTempFilters] = useState({
-    minAge: 18,
-    maxAge: 75,
+function UserList({ onSelect }: { onSelect: (user: UserWithMatch) => void }) {
+  const [filters, setFilters] = useState({
+    minAge: "18",
+    maxAge: "75",
     gender: "all",
-    maxDistance: 100,
+    maxDistance: "0", // Default to "Any distance"
   });
 
+  const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
+    queryKey: ["/api/users", filters], // Query key includes filters
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/users?minAge=${filters.minAge}&maxAge=${filters.maxAge}&gender=${filters.gender}&maxDistance=${filters.maxDistance}`
+      );
+      if (!res.ok) throw new Error("Failed to fetch users");
+      return res.json();
+    },
+  });
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [tempFilters, setTempFilters] = useState({
+    ...filters,
+    anyDistance: filters.maxDistance === "0", // Set "Any distance" based on maxDistance
+  });
+
+  // Update tempFilters when filters change
   useEffect(() => {
-    setTempFilters(filters);
+    setTempFilters({
+      ...filters,
+      anyDistance: filters.maxDistance === "0",
+    });
   }, [filters]);
 
-  const handleApplyFilters = () => {
-    setFilters(tempFilters);
-    setShowFilters(false);
-  };
+  // Automatically apply filters when tempFilters change
+  useEffect(() => {
+    setFilters({
+      ...tempFilters,
+      maxDistance: tempFilters.anyDistance ? "0" : tempFilters.maxDistance,
+    });
+  }, [tempFilters]);
+
+  if (usersLoading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="mb-6">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="flex items-center gap-2"
           onClick={() => setShowFilters(!showFilters)}
         >
@@ -726,6 +723,7 @@ function UserList({
         {showFilters && (
           <Card className="mt-2">
             <CardContent className="p-4 space-y-6">
+              {/* Age Range Filter */}
               <div>
                 <div className="flex justify-between mb-2">
                   <span>Age Range</span>
@@ -735,36 +733,52 @@ function UserList({
                   min={18}
                   max={100}
                   step={1}
-                  value={[parseInt(tempFilters.minAge.toString()), parseInt(tempFilters.maxAge.toString())]}
+                  value={[parseInt(tempFilters.minAge), parseInt(tempFilters.maxAge)]}
                   onValueChange={([min, max]) =>
-                    setTempFilters({
-                      ...tempFilters,
-                      minAge: min,
-                      maxAge: max
-                    })
+                    setTempFilters({ ...tempFilters, minAge: min.toString(), maxAge: max.toString() })
                   }
                   className="mb-4"
                 />
               </div>
+
+              {/* Distance Filter */}
               <div>
-                <div className="flex justify-between mb-2">
-                  <span>Max Distance</span>
-                  <span>{tempFilters.maxDistance} km</span>
+                <div className="flex items-center space-x-2 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={tempFilters.anyDistance}
+                    onChange={(e) =>
+                      setTempFilters({
+                        ...tempFilters,
+                        anyDistance: e.target.checked,
+                        maxDistance: e.target.checked ? "0" : tempFilters.maxDistance,
+                      })
+                    }
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label className="text-sm text-gray-700">Any distance</label>
                 </div>
-                <Slider
-                  min={0}
-                  max={1000}
-                  step={10}
-                  value={[parseInt(tempFilters.maxDistance.toString())]}
-                  onValueChange={([value]) =>
-                    setTempFilters({
-                      ...tempFilters,
-                      maxDistance: value
-                    })
-                  }
-                  className="mb-4"
-                />
+                {!tempFilters.anyDistance && (
+                  <>
+                    <div className="flex justify-between mb-2">
+                      <span>Max Distance</span>
+                      <span>{tempFilters.maxDistance} km</span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={1000}
+                      step={10}
+                      value={[parseInt(tempFilters.maxDistance)]}
+                      onValueChange={([value]) =>
+                        setTempFilters({ ...tempFilters, maxDistance: value.toString() })
+                      }
+                      className="mb-4"
+                    />
+                  </>
+                )}
               </div>
+
+              {/* Gender Filter */}
               <div>
                 <Select
                   value={tempFilters.gender}
@@ -783,17 +797,12 @@ function UserList({
                   </SelectContent>
                 </Select>
               </div>
-              <Button 
-                className="w-full"
-                onClick={handleApplyFilters}
-              >
-                Apply Filters
-              </Button>
             </CardContent>
           </Card>
         )}
       </div>
 
+      {/* Suggested Matches */}
       <h2 className="text-2xl font-bold mb-4">Suggested Matches</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {users.map((user) => (

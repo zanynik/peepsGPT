@@ -147,21 +147,17 @@ function App() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl">
-          <AuthForm
-            onLogin={loginMutation.mutate}
-            onRegister={registerMutation.mutate}
-          />
-        </div>
-      </div>
+      <AuthForm
+        onLogin={loginMutation.mutate}
+        onRegister={registerMutation.mutate}
+      />
     );
   }
 
   if (userLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-white" />
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -177,66 +173,60 @@ function App() {
         callback={handleJoyrideCallback}
         styles={{
           options: {
-            primaryColor: "#4F46E5",
-            overlayColor: "rgba(0, 0, 0, 0.85)",
+            primaryColor: "#000",
           },
         }}
       />
 
-      <div className="min-h-screen w-full p-4 sm:p-6 md:p-8">
-        <div className="max-w-6xl mx-auto glass-container rounded-xl shadow-2xl p-6">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold text-gradient">Matching Platform</h1>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  document.documentElement.classList.toggle('dark');
-                  localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-                }}
-                className="bg-glass"
-              >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRunTutorial(true)}
-                className="bg-glass"
-              >
-                <HelpCircle className="h-4 w-4 mr-2" />
-                Tutorial
-              </Button>
+      <div className="container mx-auto p-4 max-w-4xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Matching Platform</h1>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+              }}
+            >
+              <Sun className="h-4 w-4 dark:hidden" />
+              <Moon className="h-4 w-4 hidden dark:block" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRunTutorial(true)}
+            >
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Tutorial
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {currentUser && (
+            <Card className="profile-section">
+              <CardContent className="p-6">
+                <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
+                <ProfileForm
+                  user={currentUser}
+                  onSubmit={updateProfileMutation.mutate}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedUser ? (
+            <UserProfile
+              user={selectedUser}
+              onClose={() => setSelectedUser(null)}
+            />
+          ) : (
+            <div className="matches-section">
+              <UserList onSelect={setSelectedUser} />
             </div>
-          </div>
-
-          <div className="space-y-8">
-            {currentUser && (
-              <Card className="profile-section overflow-hidden">
-                <CardContent className="p-8">
-                  <h2 className="text-3xl font-bold mb-6 text-gradient">Your Profile</h2>
-                  <ProfileForm
-                    user={currentUser}
-                    onSubmit={updateProfileMutation.mutate}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {selectedUser ? (
-              <UserProfile
-                user={selectedUser}
-                onClose={() => setSelectedUser(null)}
-              />
-            ) : (
-              <div className="matches-section">
-                <UserList onSelect={setSelectedUser} />
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </>
@@ -310,7 +300,7 @@ function AuthForm({ onLogin, onRegister }: any) {
                   <Input
                     type="email"
                     placeholder="Email"
-                    {...register("email", {
+                    {...register("email", { 
                       required: "Email is required",
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,

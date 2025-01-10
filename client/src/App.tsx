@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, HelpCircle } from "lucide-react";
+import { Loader2, HelpCircle, Filter } from "lucide-react";
 import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
-import type { User } from "@db/schema";
+import type { User, Gender } from "@db/schema";
 
 interface UserWithMatch extends User {
   matchPercentage?: number;
@@ -27,12 +34,18 @@ function App() {
     enabled: isLoggedIn,
   });
 
+  const [filters, setFilters] = useState({
+    minAge: "",
+    maxAge: "",
+    gender: "",
+    maxDistance: "",
+  });
+
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users", filters],
     enabled: isLoggedIn,
   });
 
-  // Start tutorial automatically for new users
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
     if (isLoggedIn && !hasSeenTutorial) {
@@ -160,8 +173,8 @@ function App() {
       <div className="container mx-auto p-4 max-w-4xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Matching Platform</h1>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => setRunTutorial(true)}
           >
@@ -184,7 +197,7 @@ function App() {
             <UserProfile user={selectedUser} onClose={() => setSelectedUser(null)} />
           ) : (
             <div className="matches-section">
-              <UserList users={users} onSelect={setSelectedUser} />
+              <UserList users={users} onSelect={setSelectedUser} filters={filters} setFilters={setFilters} />
             </div>
           )}
         </div>
@@ -197,6 +210,8 @@ function AuthForm({ onLogin, onRegister }: any) {
   const [isLogin, setIsLogin] = useState(true);
   const { register, handleSubmit, formState: { errors } } = useForm();
 
+  const genderOptions: Gender[] = ["Male", "Female", "Other"];
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md mx-4">
@@ -204,19 +219,19 @@ function AuthForm({ onLogin, onRegister }: any) {
           <h1 className="text-2xl font-bold mb-4">{isLogin ? "Login" : "Register"}</h1>
           <form onSubmit={handleSubmit(isLogin ? onLogin : onRegister)} className="space-y-4">
             <div>
-              <Input 
-                placeholder="Username" 
-                {...register("username", { required: "Username is required" })} 
+              <Input
+                placeholder="Username"
+                {...register("username", { required: "Username is required" })}
               />
               {errors.username && (
                 <p className="text-sm text-red-500 mt-1">{errors.username.message as string}</p>
               )}
             </div>
             <div>
-              <Input 
-                type="password" 
-                placeholder="Password" 
-                {...register("password", { required: "Password is required" })} 
+              <Input
+                type="password"
+                placeholder="Password"
+                {...register("password", { required: "Password is required" })}
               />
               {errors.password && (
                 <p className="text-sm text-red-500 mt-1">{errors.password.message as string}</p>
@@ -225,41 +240,52 @@ function AuthForm({ onLogin, onRegister }: any) {
             {!isLogin && (
               <>
                 <div>
-                  <Input 
-                    placeholder="Name" 
-                    {...register("name", { required: "Name is required" })} 
+                  <Input
+                    placeholder="Name"
+                    {...register("name", { required: "Name is required" })}
                   />
                   {errors.name && (
                     <p className="text-sm text-red-500 mt-1">{errors.name.message as string}</p>
                   )}
                 </div>
                 <div>
-                  <Input 
-                    type="number" 
-                    placeholder="Age" 
-                    {...register("age", { 
+                  <Input
+                    type="number"
+                    placeholder="Age"
+                    {...register("age", {
                       required: "Age is required",
                       min: { value: 18, message: "Must be 18 or older" }
-                    })} 
+                    })}
                   />
                   {errors.age && (
                     <p className="text-sm text-red-500 mt-1">{errors.age.message as string}</p>
                   )}
                 </div>
                 <div>
-                  <Input 
-                    placeholder="Location" 
-                    {...register("location", { required: "Location is required" })} 
+                  <Input
+                    placeholder="Location"
+                    {...register("location", { required: "Location is required" })}
                   />
                   {errors.location && (
                     <p className="text-sm text-red-500 mt-1">{errors.location.message as string}</p>
                   )}
                 </div>
                 <div>
-                  <Input 
-                    placeholder="Gender" 
-                    {...register("gender", { required: "Gender is required" })} 
-                  />
+                  <Select
+                    onValueChange={(value) => register("gender").onChange(value)}
+                    {...register("gender", { required: "Gender is required" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {genderOptions.map((gender) => (
+                        <SelectItem key={gender} value={gender}>
+                          {gender}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {errors.gender && (
                     <p className="text-sm text-red-500 mt-1">{errors.gender.message as string}</p>
                   )}
@@ -306,9 +332,9 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
         </Avatar>
         <div>
           <input type="file" onChange={handlePhotoChange} />
-          <Input 
-            type="url" 
-            placeholder="Photo URL" 
+          <Input
+            type="url"
+            placeholder="Photo URL"
             {...register("photoUrl")}
             onChange={(e) => setPhotoPreview(e.target.value)}
           />
@@ -322,38 +348,38 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
         )}
       </div>
       <div>
-        <Input 
-          type="email" 
-          placeholder="Email" 
-          {...register("email", { 
+        <Input
+          type="email"
+          placeholder="Email"
+          {...register("email", {
             required: "Email is required",
             pattern: {
               value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
               message: "Invalid email address"
             }
-          })} 
+          })}
         />
         {errors.email && (
           <p className="text-sm text-red-500 mt-1">{errors.email.message as string}</p>
         )}
       </div>
       <div>
-        <Input 
-          type="number" 
-          placeholder="Age" 
-          {...register("age", { 
+        <Input
+          type="number"
+          placeholder="Age"
+          {...register("age", {
             required: "Age is required",
             min: { value: 18, message: "Must be 18 or older" }
-          })} 
+          })}
         />
         {errors.age && (
           <p className="text-sm text-red-500 mt-1">{errors.age.message as string}</p>
         )}
       </div>
       <div>
-        <Input 
-          placeholder="Location" 
-          {...register("location", { required: "Location is required" })} 
+        <Input
+          placeholder="Location"
+          {...register("location", { required: "Location is required" })}
         />
         {errors.location && (
           <p className="text-sm text-red-500 mt-1">{errors.location.message as string}</p>
@@ -370,17 +396,17 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
         <p className="text-sm text-gray-500 mt-1">Add your social media handles (comma-separated)</p>
       </div>
       <div>
-        <Textarea 
-          placeholder="Public Description" 
-          {...register("publicDescription")} 
+        <Textarea
+          placeholder="Public Description"
+          {...register("publicDescription")}
           className="h-24"
         />
         <p className="text-sm text-gray-500 mt-1">This will be visible to other users</p>
       </div>
       <div>
-        <Textarea 
-          placeholder="Private Description" 
-          {...register("privateDescription")} 
+        <Textarea
+          placeholder="Private Description"
+          {...register("privateDescription")}
           className="h-24"
         />
         <p className="text-sm text-gray-500 mt-1">This is just for you</p>
@@ -400,15 +426,68 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
   );
 }
 
-function UserList({ users, onSelect }: { users: UserWithMatch[]; onSelect: (user: UserWithMatch) => void }) {
+function UserList({ users, onSelect, filters, setFilters }: { users: UserWithMatch[]; onSelect: (user: UserWithMatch) => void; filters: any; setFilters: any }) {
   return (
     <div>
+      <div className="mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="h-5 w-5" />
+              <h3 className="font-semibold">Filters</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <Input
+                  type="number"
+                  placeholder="Min Age"
+                  value={filters.minAge}
+                  onChange={(e) => setFilters({ ...filters, minAge: e.target.value })}
+                />
+              </div>
+              <div>
+                <Input
+                  type="number"
+                  placeholder="Max Age"
+                  value={filters.maxAge}
+                  onChange={(e) => setFilters({ ...filters, maxAge: e.target.value })}
+                />
+              </div>
+              <div>
+                <Select
+                  value={filters.gender}
+                  onValueChange={(value) => setFilters({ ...filters, gender: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Any</SelectItem>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Input
+                  type="number"
+                  placeholder="Max Distance (km)"
+                  value={filters.maxDistance}
+                  onChange={(e) => setFilters({ ...filters, maxDistance: e.target.value })}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <h2 className="text-2xl font-bold mb-4">Suggested Matches</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {users.map((user) => (
-          <Card 
-            key={user.id} 
-            className="cursor-pointer hover:shadow-lg transition-shadow match-card" 
+          <Card
+            key={user.id}
+            className="cursor-pointer hover:shadow-lg transition-shadow match-card"
             onClick={() => onSelect(user)}
           >
             <CardContent className="p-4">

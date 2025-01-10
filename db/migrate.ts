@@ -1,4 +1,3 @@
-
 import { db } from "./index";
 import { users, matches } from "./schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
@@ -16,6 +15,8 @@ async function runMigration() {
       name TEXT NOT NULL,
       age INTEGER NOT NULL,
       location TEXT NOT NULL,
+      latitude DECIMAL(10,6),
+      longitude DECIMAL(10,6),
       gender TEXT NOT NULL,
       public_description TEXT NOT NULL,
       private_description TEXT NOT NULL,

@@ -1,13 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { users, matches } from "@db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { users, matches, genderEnum } from "@db/schema";
+import { eq, and, desc, between } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { startNewsletterScheduler } from "./services/newsletter";
+import { validateAndGetLocation } from "./services/geonames";
+import { z } from "zod";
 
 declare module "express-session" {
   interface SessionData {
@@ -50,7 +52,18 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/register", async (req, res) => {
     try {
-      const { username, password, email, ...profile } = req.body;
+      const { username, password, email, location, ...profile } = req.body;
+
+      // Validate gender
+      if (!genderEnum.safeParse(profile.gender).success) {
+        return res.status(400).send("Invalid gender value");
+      }
+
+      // Validate and get location data
+      const locationData = await validateAndGetLocation(location);
+      if (!locationData) {
+        return res.status(400).send("Invalid location");
+      }
 
       const existingUser = await db.query.users.findFirst({
         where: eq(users.username, username),
@@ -67,6 +80,9 @@ export function registerRoutes(app: Express): Server {
           username,
           password: hashedPassword,
           email,
+          location: locationData.name,
+          latitude: locationData.latitude.toString(),
+          longitude: locationData.longitude.toString(),
           ...profile,
           photoUrl: profile.photoUrl || "https://via.placeholder.com/150",
           publicDescription: profile.publicDescription || "",
@@ -102,12 +118,12 @@ export function registerRoutes(app: Express): Server {
       }
 
       req.session.userId = user.id;
-      
+
       // Fetch full user data after successful authentication
       const fullUser = await db.query.users.findFirst({
         where: eq(users.id, user.id)
       });
-      
+
       res.json(fullUser);
     } catch (error: any) {
       console.error("Login error:", error);
@@ -148,36 +164,68 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const allUsers = await db.query.users.findMany();
-      const currentUserId = req.session.userId;
+      const { minAge, maxAge, gender, maxDistance, location } = req.query;
+
+      const currentUser = await db.query.users.findFirst({
+        where: eq(users.id, req.session.userId),
+      });
+
+      if (!currentUser) {
+        return res.status(404).send("User not found");
+      }
+
+      let allUsers = await db.query.users.findMany();
+
+      // Filter users based on criteria
+      const filteredUsers = allUsers
+        .filter(user => user.id !== req.session.userId)
+        .filter(user => {
+          // Age filter
+          if (minAge && user.age < parseInt(minAge as string)) return false;
+          if (maxAge && user.age > parseInt(maxAge as string)) return false;
+
+          // Gender filter
+          if (gender && user.gender !== gender) return false;
+
+          // Distance filter
+          if (maxDistance && currentUser.latitude && currentUser.longitude) {
+            const distance = calculateDistance(
+              parseFloat(currentUser.latitude),
+              parseFloat(currentUser.longitude),
+              parseFloat(user.latitude || "0"),
+              parseFloat(user.longitude || "0")
+            );
+            if (distance > parseInt(maxDistance as string)) return false;
+          }
+
+          return true;
+        });
 
       const usersWithMatches = await Promise.all(
-        allUsers
-          .filter(user => user.id !== currentUserId)
-          .map(async (user) => {
-            const existingMatch = await db.query.matches.findFirst({
-              where: and(
-                eq(matches.user1Id, currentUserId),
-                eq(matches.user2Id, user.id)
-              ),
-            });
+        filteredUsers.map(async (user) => {
+          const existingMatch = await db.query.matches.findFirst({
+            where: and(
+              eq(matches.user1Id, currentUser.id),
+              eq(matches.user2Id, user.id)
+            ),
+          });
 
-            if (!existingMatch) {
-              const matchScore = calculateMatch(user, allUsers.find(u => u.id === currentUserId));
-              const [newMatch] = await db
-                .insert(matches)
-                .values({
-                  user1Id: currentUserId,
-                  user2Id: user.id,
-                  percentage: matchScore,
-                })
-                .returning();
+          if (!existingMatch) {
+            const matchScore = calculateMatch(user, currentUser);
+            const [newMatch] = await db
+              .insert(matches)
+              .values({
+                user1Id: currentUser.id,
+                user2Id: user.id,
+                percentage: matchScore,
+              })
+              .returning();
 
-              return { ...user, matchPercentage: newMatch.percentage };
-            }
+            return { ...user, matchPercentage: newMatch.percentage };
+          }
 
-            return { ...user, matchPercentage: existingMatch.percentage };
-          })
+          return { ...user, matchPercentage: existingMatch.percentage };
+        })
       );
 
       const sortedUsers = usersWithMatches.sort((a, b) => 
@@ -197,9 +245,34 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
+      const { location, gender, ...profile } = req.body;
+
+      // Validate gender
+      if (!genderEnum.safeParse(gender).success) {
+        return res.status(400).send("Invalid gender value");
+      }
+
+      // Validate and get location data if location is being updated
+      let locationUpdate = {};
+      if (location) {
+        const locationData = await validateAndGetLocation(location);
+        if (!locationData) {
+          return res.status(400).send("Invalid location");
+        }
+        locationUpdate = {
+          location: locationData.name,
+          latitude: locationData.latitude.toString(),
+          longitude: locationData.longitude.toString(),
+        };
+      }
+
       const [user] = await db
         .update(users)
-        .set(req.body)
+        .set({
+          ...profile,
+          ...locationUpdate,
+          gender,
+        })
         .where(eq(users.id, req.session.userId))
         .returning();
 
@@ -245,9 +318,7 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-function calculateMatch(user1: any, user2: any | undefined): number {
-  if (!user2) return 50; // Default score if no comparison user found
-
+function calculateMatch(user1: any, user2: any): number {
   const baseScore = 50;
   let score = baseScore;
 
@@ -265,4 +336,20 @@ function calculateMatch(user1: any, user2: any | undefined): number {
 
   // Ensure score is between 0 and 100
   return Math.min(100, Math.max(0, score));
+}
+
+// Helper function to calculate distance between two points using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function toRad(value: number): number {
+  return (value * Math.PI) / 180;
 }

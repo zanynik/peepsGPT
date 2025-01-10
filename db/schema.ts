@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
+import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -10,6 +11,8 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   age: integer("age").notNull(),
   location: text("location").notNull(),
+  latitude: decimal("latitude", { precision: 10, scale: 6 }),
+  longitude: decimal("longitude", { precision: 10, scale: 6 }),
   gender: text("gender").notNull(),
   publicDescription: text("public_description").notNull(),
   privateDescription: text("private_description").notNull(),
@@ -45,7 +48,11 @@ export const matchesRelations = relations(matches, ({ one }) => ({
   }),
 }));
 
-export const insertUserSchema = createInsertSchema(users);
+export const genderEnum = z.enum(["Male", "Female", "Other"]);
+
+export const insertUserSchema = createInsertSchema(users, {
+  gender: genderEnum
+});
 export const selectUserSchema = createSelectSchema(users);
 export const insertMatchSchema = createInsertSchema(matches);
 export const selectMatchSchema = createSelectSchema(matches);
@@ -54,3 +61,4 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Match = typeof matches.$inferSelect;
 export type NewMatch = typeof matches.$inferInsert;
+export type Gender = z.infer<typeof genderEnum>;

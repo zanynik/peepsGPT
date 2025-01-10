@@ -393,14 +393,14 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
           {...register("location", { required: "Location is required" })}
           onChange={async (e) => {
             const query = e.target.value;
+            setValue('location', query);
             if (query.length >= 2) {
               try {
                 const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
                 const data = await response.json();
-                if (data.suggestions) {
-                  setLocationSuggestions(data.suggestions);
-                  setShowSuggestions(true);
-                }
+                console.log('Location suggestions:', data);
+                setLocationSuggestions(data.suggestions || []);
+                setShowSuggestions(true);
               } catch (error) {
                 console.error('Error fetching locations:', error);
               }

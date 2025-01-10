@@ -17,22 +17,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, HelpCircle, Filter } from "lucide-react";
+import { Loader2, HelpCircle, Filter, AlertCircle } from "lucide-react";
 import Joyride, { Step, CallBackProps, STATUS } from "react-joyride";
 import type { User, Gender } from "@db/schema";
+import { Switch, Route } from "wouter";
+import { ThemeProvider } from "@/components/theme-provider";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import Home from "@/pages/home";
+import { Toaster } from "@/components/ui/toaster";
 
 interface UserWithMatch extends User {
   matchPercentage?: number;
 }
 
 function App() {
-  useEffect(() => {
-    const theme = localStorage.getItem('theme') || 'light';
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithMatch | null>(null);
   const [runTutorial, setRunTutorial] = useState(false);
@@ -145,109 +144,45 @@ function App() {
     },
   });
 
-  if (!isLoggedIn) {
-    return (
-      <AuthForm
-        onLogin={loginMutation.mutate}
-        onRegister={registerMutation.mutate}
-      />
-    );
-  }
+  useEffect(() => {
+    const theme = localStorage.getItem('theme') || 'light';
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
 
-  if (userLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
-    <>
-      <Joyride
-        steps={tutorialSteps}
-        run={runTutorial}
-        continuous
-        showProgress
-        showSkipButton
-        callback={handleJoyrideCallback}
-        styles={{
-          options: {
-            primaryColor: "hsl(var(--primary))",
-            backgroundColor: "hsl(var(--background))",
-            textColor: "hsl(var(--foreground))",
-          },
-        }}
-      />
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="app-theme">
+        <main>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route component={NotFound} />
+          </Switch>
+        </main>
+        <Toaster />
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
 
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <header className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Matching Platform
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Connect with like-minded professionals
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  document.documentElement.classList.toggle('dark');
-                  localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-                }}
-              >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRunTutorial(true)}
-              >
-                <HelpCircle className="h-4 w-4 mr-2" />
-                Tutorial
-              </Button>
-            </div>
-          </header>
-
-          <div className="grid gap-8 md:grid-cols-[350px,1fr]">
-            {currentUser && (
-              <aside>
-                <Card className="profile-section sticky top-8">
-                  <div className="profile-header">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
-                  </div>
-                  <CardContent className="form-section -mt-16 relative">
-                    <ProfileForm
-                      user={currentUser}
-                      onSubmit={updateProfileMutation.mutate}
-                    />
-                  </CardContent>
-                </Card>
-              </aside>
-            )}
-
-            <main>
-              {selectedUser ? (
-                <UserProfile
-                  user={selectedUser}
-                  onClose={() => setSelectedUser(null)}
-                />
-              ) : (
-                <div className="matches-section space-y-6">
-                  <UserList onSelect={setSelectedUser} />
-                </div>
-              )}
-            </main>
+// fallback 404 not found page
+function NotFound() {
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-background">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="pt-6">
+          <div className="flex mb-4 gap-2">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+            <h1 className="text-2xl font-bold">404 Page Not Found</h1>
           </div>
-        </div>
-      </div>
-    </>
+          <p className="mt-4 text-sm text-muted-foreground">
+            The page you're looking for doesn't exist.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

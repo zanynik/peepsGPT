@@ -170,6 +170,15 @@ return (
     />
 
     <div className="container mx-auto p-4 max-w-4xl">
+      <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-6 mb-8 shadow-sm">
+        <h2 className="text-2xl font-bold mb-3">Welcome to our Matching Platform!</h2>
+        <p className="text-gray-700 mb-2">
+          Connect with like-minded individuals who share your passions and interests. Our platform helps you find meaningful connections based on what matters most to you.
+        </p>
+        <p className="text-gray-700">
+          The more you share about yourself in your profile - your interests, hobbies, and what drives you - the better our matching system can connect you with compatible people. Our matching algorithm considers your location, age, and most importantly, the passions you describe in your profile.
+        </p>
+      </div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Matching Platform</h1>
         <Button

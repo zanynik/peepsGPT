@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { users } from "@db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { users, matches, genderEnum } from "@db/schema";
+import { eq, and, desc, between } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import session from "express-session";
@@ -10,7 +10,6 @@ import createMemoryStore from "memorystore";
 import { startNewsletterScheduler } from "./services/newsletter";
 import { validateAndGetLocation, getSuggestions } from "./services/geonames";
 import { z } from "zod";
-import { setupAuth } from "./auth";
 
 declare module "express-session" {
   interface SessionData {
@@ -39,69 +38,18 @@ const crypto = {
 };
 
 export function registerRoutes(app: Express): Server {
-  // Setup authentication routes
-  setupAuth(app);
-
-  // Get matched users
-  app.get("/api/users/matched", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).send("Not authenticated");
-    }
-
-    try {
-      const currentUser = await db.query.users.findFirst({
-        where: eq(users.id, req.session.userId),
-      });
-
-      if (!currentUser) {
-        return res.status(404).send("User not found");
-      }
-
-      const allUsers = await db.query.users.findMany();
-      const filteredUsers = allUsers
-        .filter((user) => user.id !== req.session.userId)
-        .map((user) => {
-          const matchScore = calculateMatch(user, currentUser);
-          return {
-            ...user,
-            matchPercentage: matchScore,
-          };
-        })
-        .sort((a, b) => b.matchPercentage - a.matchPercentage);
-
-      res.json(filteredUsers);
-    } catch (error: any) {
-      console.error("Get matched users error:", error);
-      res.status(500).send(error.message || "Server error");
-    }
-  });
-
-  // Get random users for unauthenticated view
-  app.get("/api/users/random", async (req, res) => {
-    try {
-      const randomUsers = await db.query.users.findMany({
-        limit: 9, // Show 9 random users
-      });
-
-      res.json(randomUsers);
-    } catch (error: any) {
-      console.error("Get random users error:", error);
-      res.status(500).send(error.message || "Server error");
-    }
-  });
-
   app.get("/api/locations/suggest", async (req, res) => {
     try {
       const { q } = req.query;
       if (typeof q !== 'string' || q.length < 2) {
         return res.status(400).json({ suggestions: [] });
       }
-
+      
       const suggestions = await getSuggestions(q);
       if (!suggestions || suggestions.length === 0) {
         return res.json({ suggestions: [] });
       }
-
+      
       res.json({ suggestions });
     } catch (error: any) {
       console.error("Location suggestion error:", error);
@@ -227,7 +175,6 @@ export function registerRoutes(app: Express): Server {
       res.status(500).send(error.message || "Server error");
     }
   });
-
 
   app.get("/api/users", async (req, res) => {
     if (!req.session.userId) {
@@ -363,24 +310,24 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.get("/api/share/:userId", async (req, res) => {
-    const { userId } = req.params;
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, parseInt(userId))
-    });
-
-    if (!user) return res.status(404).send("User not found");
-
-    const notes = await db.query.notes.findMany({
-      where: and(
-        eq(notes.userId, parseInt(userId)),
-        eq(notes.type, "public")
-      )
-    });
-
-    res.json({ user, notes });
+  const { userId } = req.params;
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, parseInt(userId))
   });
 
-  app.post("/api/newsletter/toggle", async (req, res) => {
+  if (!user) return res.status(404).send("User not found");
+
+  const notes = await db.query.notes.findMany({
+    where: and(
+      eq(notes.userId, parseInt(userId)),
+      eq(notes.type, "public")
+    )
+  });
+
+  res.json({ user, notes });
+});
+
+app.post("/api/newsletter/toggle", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
     }
@@ -415,15 +362,38 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-// Helper function to calculate match percentage between users
 function calculateMatch(user1: any, user2: any): number {
-  // Start with a base score
-  let score = 50;
+  const baseScore = 50;
+  let score = baseScore;
 
-  // Add more matching criteria based on user fields
-  // For now using a simple random score for demonstration
-  score += Math.floor(Math.random() * 50);
+  // Age comparison
+  const ageDiff = Math.abs(user1.age - user2.age);
+  score += Math.max(0, 20 - ageDiff);
+
+  // Location matching
+  if (user1.location === user2.location) {
+    score += 20;
+  }
+
+  // Add some randomness to prevent identical scores
+  score += Math.floor(Math.random() * 20) - 10;
 
   // Ensure score is between 0 and 100
   return Math.min(100, Math.max(0, score));
+}
+
+// Helper function to calculate distance between two points using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function toRad(value: number): number {
+  return (value * Math.PI) / 180;
 }

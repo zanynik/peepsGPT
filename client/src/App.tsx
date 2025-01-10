@@ -79,7 +79,7 @@ function App() {
 
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data;
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
       localStorage.setItem('hasSeenTutorial', 'true');
       setRunTutorial(false);
     }
@@ -208,9 +208,13 @@ function App() {
 
 function AuthForm({ onLogin, onRegister }: any) {
   const [isLogin, setIsLogin] = useState(true);
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
 
   const genderOptions: Gender[] = ["Male", "Female", "Other"];
+
+  const handleGenderChange = (value: string) => {
+    setValue('gender', value);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -271,10 +275,7 @@ function AuthForm({ onLogin, onRegister }: any) {
                   )}
                 </div>
                 <div>
-                  <Select
-                    onValueChange={(value) => register("gender").onChange(value)}
-                    {...register("gender", { required: "Gender is required" })}
-                  >
+                  <Select onValueChange={handleGenderChange} {...register("gender", { required: "Gender is required" })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
@@ -310,8 +311,14 @@ function AuthForm({ onLogin, onRegister }: any) {
 }
 
 function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
-  const { register, handleSubmit, formState: { errors } } = useForm({ defaultValues: user });
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm({ defaultValues: user });
   const [photoPreview, setPhotoPreview] = useState(user.photoUrl);
+
+  const genderOptions: Gender[] = ["Male", "Female", "Other"];
+
+  const handleGenderChange = (value: string) => {
+    setValue('gender', value);
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -386,7 +393,18 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
         )}
       </div>
       <div>
-        <Input placeholder="Gender" {...register("gender", { required: "Gender is required" })} />
+        <Select defaultValue={user.gender} onValueChange={handleGenderChange} >
+          <SelectTrigger>
+            <SelectValue placeholder="Select gender" />
+          </SelectTrigger>
+          <SelectContent>
+            {genderOptions.map((gender) => (
+              <SelectItem key={gender} value={gender}>
+                {gender}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {errors.gender && (
           <p className="text-sm text-red-500 mt-1">{errors.gender.message as string}</p>
         )}

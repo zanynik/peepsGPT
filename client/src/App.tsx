@@ -314,6 +314,9 @@ function AuthForm({ onLogin, onRegister }: any) {
 function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm({ defaultValues: user });
   const [photoPreview, setPhotoPreview] = useState(user.photoUrl);
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   const genderOptions: Gender[] = ["Male", "Female", "Other"];
 
@@ -384,14 +387,70 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
           <p className="text-sm text-red-500 mt-1">{errors.age.message as string}</p>
         )}
       </div>
-      <div>
+      <div className="relative">
         <Input
           placeholder="Location"
           {...register("location", { required: "Location is required" })}
+          onChange={async (e) => {
+            const query = e.target.value;
+            if (query.length >= 2) {
+              try {
+                const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                if (data.suggestions) {
+                  setLocationSuggestions(data.suggestions);
+                  setShowSuggestions(true);
+                }
+              } catch (error) {
+                console.error('Error fetching locations:', error);
+              }
+            } else {
+              setLocationSuggestions([]);
+              setShowSuggestions(false);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              const newIndex = e.key === 'ArrowDown' 
+                ? Math.min(selectedIndex + 1, locationSuggestions.length - 1)
+                : Math.max(selectedIndex - 1, -1);
+              setSelectedIndex(newIndex);
+            } else if (e.key === 'Enter' && selectedIndex >= 0) {
+              e.preventDefault();
+              const selected = locationSuggestions[selectedIndex];
+              setValue('location', selected.fullName);
+              setValue('latitude', selected.latitude.toString());
+              setValue('longitude', selected.longitude.toString());
+              setShowSuggestions(false);
+            }
+          }}
         />
+        {showSuggestions && locationSuggestions.length > 0 && (
+          <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+            {locationSuggestions.map((suggestion, index) => (
+              <div
+                key={`${suggestion.name}-${index}`}
+                className={`p-2 cursor-pointer hover:bg-gray-100 ${
+                  index === selectedIndex ? 'bg-gray-200' : ''
+                }`}
+                onClick={() => {
+                  setValue('location', suggestion.fullName);
+                  setValue('latitude', suggestion.latitude.toString());
+                  setValue('longitude', suggestion.longitude.toString());
+                  setShowSuggestions(false);
+                }}
+              >
+                {suggestion.fullName}
+              </div>
+            ))}
+          </div>
+        )}
         {errors.location && (
           <p className="text-sm text-red-500 mt-1">{errors.location.message as string}</p>
         )}
+        <input type="hidden" {...register("latitude")} />
+        <input type="hidden" {...register("longitude")} />
       </div>
       <div>
         <Select defaultValue={user.gender} onValueChange={handleGenderChange}>

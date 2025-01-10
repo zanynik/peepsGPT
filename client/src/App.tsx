@@ -505,7 +505,9 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
           Receive weekly match recommendations via email
         </label>
       </div>
-      <Button type="submit">Update Profile</Button>
+      <div>
+        <Button type="submit">Update Profile</Button>
+      </div>
     </form>
   );
 }

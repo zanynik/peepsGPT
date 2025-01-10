@@ -272,6 +272,7 @@ export function registerRoutes(app: Express): Server {
           ...profile,
           ...locationUpdate,
           gender,
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(users.id, req.session.userId))
         .returning();

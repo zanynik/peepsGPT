@@ -20,7 +20,7 @@ export const users = pgTable("users", {
   privateDescription: text("private_description").notNull(),
   socialIds: text("social_ids").notNull(),
   photoUrl: text("photo_url").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
   newsletterEnabled: boolean("newsletter_enabled").default(true).notNull(),
 });
 
@@ -29,7 +29,7 @@ export const matches = pgTable("matches", {
   user1Id: integer("user1_id").references(() => users.id).notNull(),
   user2Id: integer("user2_id").references(() => users.id).notNull(),
   percentage: integer("percentage").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({

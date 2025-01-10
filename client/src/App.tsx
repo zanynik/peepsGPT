@@ -213,7 +213,7 @@ function AuthForm({ onLogin, onRegister }: any) {
   const genderOptions: Gender[] = ["Male", "Female", "Other"];
 
   const handleGenderChange = (value: string) => {
-    setValue('gender', value);
+    setValue('gender', value, { shouldValidate: true });
   };
 
   return (
@@ -275,7 +275,7 @@ function AuthForm({ onLogin, onRegister }: any) {
                   )}
                 </div>
                 <div>
-                  <Select onValueChange={handleGenderChange} {...register("gender", { required: "Gender is required" })}>
+                  <Select onValueChange={handleGenderChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
@@ -287,6 +287,7 @@ function AuthForm({ onLogin, onRegister }: any) {
                       ))}
                     </SelectContent>
                   </Select>
+                  <input type="hidden" {...register("gender", { required: "Gender is required" })} />
                   {errors.gender && (
                     <p className="text-sm text-red-500 mt-1">{errors.gender.message as string}</p>
                   )}
@@ -317,7 +318,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
   const genderOptions: Gender[] = ["Male", "Female", "Other"];
 
   const handleGenderChange = (value: string) => {
-    setValue('gender', value);
+    setValue('gender', value, { shouldValidate: true });
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -393,7 +394,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
         )}
       </div>
       <div>
-        <Select defaultValue={user.gender} onValueChange={handleGenderChange} >
+        <Select defaultValue={user.gender} onValueChange={handleGenderChange}>
           <SelectTrigger>
             <SelectValue placeholder="Select gender" />
           </SelectTrigger>
@@ -405,6 +406,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
             ))}
           </SelectContent>
         </Select>
+        <input type="hidden" {...register("gender", { required: "Gender is required" })} />
         {errors.gender && (
           <p className="text-sm text-red-500 mt-1">{errors.gender.message as string}</p>
         )}

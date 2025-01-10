@@ -3,6 +3,8 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
 
+export const genderEnum = z.enum(["Male", "Female", "Other"]);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
@@ -13,7 +15,7 @@ export const users = pgTable("users", {
   location: text("location").notNull(),
   latitude: decimal("latitude", { precision: 10, scale: 6 }),
   longitude: decimal("longitude", { precision: 10, scale: 6 }),
-  gender: text("gender").notNull(),
+  gender: text("gender", { enum: ["Male", "Female", "Other"] }).notNull(),
   publicDescription: text("public_description").notNull(),
   privateDescription: text("private_description").notNull(),
   socialIds: text("social_ids").notNull(),
@@ -47,8 +49,6 @@ export const matchesRelations = relations(matches, ({ one }) => ({
     relationName: "user2_matches",
   }),
 }));
-
-export const genderEnum = z.enum(["Male", "Female", "Other"]);
 
 export const insertUserSchema = createInsertSchema(users, {
   gender: genderEnum

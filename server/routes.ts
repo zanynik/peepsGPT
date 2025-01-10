@@ -8,7 +8,7 @@ import { promisify } from "util";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { startNewsletterScheduler } from "./services/newsletter";
-import { validateAndGetLocation } from "./services/geonames";
+import { validateAndGetLocation, getSuggestions } from "./services/geonames";
 import { z } from "zod";
 
 declare module "express-session" {
@@ -141,6 +141,23 @@ export function registerRoutes(app: Express): Server {
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
     }
+
+
+  app.get("/api/locations/suggest", async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (typeof q !== 'string') {
+        return res.status(400).send("Query parameter required");
+      }
+      
+      const suggestions = await getSuggestions(q);
+      res.json(suggestions);
+    } catch (error: any) {
+      console.error("Location suggestion error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
+  });
+
 
     try {
       const user = await db.query.users.findFirst({

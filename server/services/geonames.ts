@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { env } from 'process';
 
@@ -12,6 +13,39 @@ export interface LocationData {
   latitude: number;
   longitude: number;
   countryName: string;
+}
+
+export interface LocationSuggestion {
+  name: string;
+  fullName: string;
+  latitude: number;
+  longitude: number;
+}
+
+export async function getSuggestions(query: string): Promise<LocationSuggestion[]> {
+  if (!query || query.length < 2) return [];
+  
+  try {
+    const response = await axios.get(GEONAMES_API_URL, {
+      params: {
+        q: query,
+        maxRows: 5,
+        username: env.GEONAMES_USERNAME,
+        style: 'FULL',
+        featureClass: 'P'
+      }
+    });
+
+    return response.data.geonames.map((place: any) => ({
+      name: place.name,
+      fullName: `${place.name}, ${place.countryName}`,
+      latitude: parseFloat(place.lat),
+      longitude: parseFloat(place.lng)
+    }));
+  } catch (error) {
+    console.error('GeoNames API error:', error);
+    return [];
+  }
 }
 
 export async function validateAndGetLocation(location: string): Promise<LocationData | null> {

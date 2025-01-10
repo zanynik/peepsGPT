@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, HelpCircle, Filter } from "lucide-react";
-import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
+import Joyride, { Step, CallBackProps, STATUS } from "react-joyride";
 import type { User, Gender } from "@db/schema";
 
 interface UserWithMatch extends User {
@@ -41,13 +41,15 @@ function App() {
     maxDistance: "",
   });
 
-  const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
+  const { data: users = [], isLoading: usersLoading } = useQuery<
+    UserWithMatch[]
+  >({
     queryKey: ["/api/users", filters],
     enabled: isLoggedIn,
   });
 
   useEffect(() => {
-    const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
+    const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
     if (isLoggedIn && !hasSeenTutorial) {
       setRunTutorial(true);
     }
@@ -55,32 +57,37 @@ function App() {
 
   const tutorialSteps: Step[] = [
     {
-      target: '.profile-section',
-      content: 'Welcome to the matching platform! This is your profile section where you can edit your details and preferences.',
+      target: ".profile-section",
+      content:
+        "Welcome to the matching platform! This is your profile section where you can edit your details and preferences.",
       disableBeacon: true,
     },
     {
-      target: '.photo-upload',
-      content: 'Add a photo to make your profile more appealing. You can upload an image or provide a URL.',
+      target: ".photo-upload",
+      content:
+        "Add a photo to make your profile more appealing. You can upload an image or provide a URL.",
     },
     {
-      target: '.matches-section',
-      content: 'Here you can see your potential matches, sorted by compatibility percentage.',
+      target: ".matches-section",
+      content:
+        "Here you can see your potential matches, sorted by compatibility percentage.",
     },
     {
-      target: '.match-card',
-      content: 'Click on any profile card to view detailed information about that person.',
+      target: ".match-card",
+      content:
+        "Click on any profile card to view detailed information about that person.",
     },
     {
-      target: '.social-info',
-      content: 'Add your social media handles to let others connect with you on different platforms.',
+      target: ".social-info",
+      content:
+        "Add your social media handles to let others connect with you on different platforms.",
     },
   ];
 
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data;
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
-      localStorage.setItem('hasSeenTutorial', 'true');
+      localStorage.setItem("hasSeenTutorial", "true");
       setRunTutorial(false);
     }
   };
@@ -143,7 +150,12 @@ function App() {
   });
 
   if (!isLoggedIn) {
-    return <AuthForm onLogin={loginMutation.mutate} onRegister={registerMutation.mutate} />;
+    return (
+      <AuthForm
+        onLogin={loginMutation.mutate}
+        onRegister={registerMutation.mutate}
+      />
+    );
   }
 
   if (userLoading || usersLoading) {
@@ -165,7 +177,7 @@ function App() {
         callback={handleJoyrideCallback}
         styles={{
           options: {
-            primaryColor: '#000',
+            primaryColor: "#000",
           },
         }}
       />
@@ -188,16 +200,27 @@ function App() {
             <Card className="profile-section">
               <CardContent className="p-6">
                 <h2 className="text-2xl font-bold mb-4">Your Profile</h2>
-                <ProfileForm user={currentUser} onSubmit={updateProfileMutation.mutate} />
+                <ProfileForm
+                  user={currentUser}
+                  onSubmit={updateProfileMutation.mutate}
+                />
               </CardContent>
             </Card>
           )}
 
           {selectedUser ? (
-            <UserProfile user={selectedUser} onClose={() => setSelectedUser(null)} />
+            <UserProfile
+              user={selectedUser}
+              onClose={() => setSelectedUser(null)}
+            />
           ) : (
             <div className="matches-section">
-              <UserList users={users} onSelect={setSelectedUser} filters={filters} setFilters={setFilters} />
+              <UserList
+                users={users}
+                onSelect={setSelectedUser}
+                filters={filters}
+                setFilters={setFilters}
+              />
             </div>
           )}
         </div>
@@ -208,27 +231,39 @@ function App() {
 
 function AuthForm({ onLogin, onRegister }: any) {
   const [isLogin, setIsLogin] = useState(true);
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm();
 
   const genderOptions: Gender[] = ["Male", "Female", "Other"];
 
   const handleGenderChange = (value: string) => {
-    setValue('gender', value, { shouldValidate: true });
+    setValue("gender", value, { shouldValidate: true });
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md mx-4">
         <CardContent className="p-6">
-          <h1 className="text-2xl font-bold mb-4">{isLogin ? "Login" : "Register"}</h1>
-          <form onSubmit={handleSubmit(isLogin ? onLogin : onRegister)} className="space-y-4">
+          <h1 className="text-2xl font-bold mb-4">
+            {isLogin ? "Login" : "Register"}
+          </h1>
+          <form
+            onSubmit={handleSubmit(isLogin ? onLogin : onRegister)}
+            className="space-y-4"
+          >
             <div>
               <Input
                 placeholder="Username"
                 {...register("username", { required: "Username is required" })}
               />
               {errors.username && (
-                <p className="text-sm text-red-500 mt-1">{errors.username.message as string}</p>
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.username.message as string}
+                </p>
               )}
             </div>
             <div>
@@ -238,7 +273,9 @@ function AuthForm({ onLogin, onRegister }: any) {
                 {...register("password", { required: "Password is required" })}
               />
               {errors.password && (
-                <p className="text-sm text-red-500 mt-1">{errors.password.message as string}</p>
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.password.message as string}
+                </p>
               )}
             </div>
             {!isLogin && (
@@ -249,7 +286,9 @@ function AuthForm({ onLogin, onRegister }: any) {
                     {...register("name", { required: "Name is required" })}
                   />
                   {errors.name && (
-                    <p className="text-sm text-red-500 mt-1">{errors.name.message as string}</p>
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.name.message as string}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -258,20 +297,26 @@ function AuthForm({ onLogin, onRegister }: any) {
                     placeholder="Age"
                     {...register("age", {
                       required: "Age is required",
-                      min: { value: 18, message: "Must be 18 or older" }
+                      min: { value: 18, message: "Must be 18 or older" },
                     })}
                   />
                   {errors.age && (
-                    <p className="text-sm text-red-500 mt-1">{errors.age.message as string}</p>
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.age.message as string}
+                    </p>
                   )}
                 </div>
                 <div>
                   <Input
                     placeholder="Location"
-                    {...register("location", { required: "Location is required" })}
+                    {...register("location", {
+                      required: "Location is required",
+                    })}
                   />
                   {errors.location && (
-                    <p className="text-sm text-red-500 mt-1">{errors.location.message as string}</p>
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.location.message as string}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -287,9 +332,14 @@ function AuthForm({ onLogin, onRegister }: any) {
                       ))}
                     </SelectContent>
                   </Select>
-                  <input type="hidden" {...register("gender", { required: "Gender is required" })} />
+                  <input
+                    type="hidden"
+                    {...register("gender", { required: "Gender is required" })}
+                  />
                   {errors.gender && (
-                    <p className="text-sm text-red-500 mt-1">{errors.gender.message as string}</p>
+                    <p className="text-sm text-red-500 mt-1">
+                      {errors.gender.message as string}
+                    </p>
                   )}
                 </div>
               </>
@@ -312,7 +362,12 @@ function AuthForm({ onLogin, onRegister }: any) {
 }
 
 function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm({ defaultValues: user });
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm({ defaultValues: user });
   const [photoPreview, setPhotoPreview] = useState(user.photoUrl);
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -321,7 +376,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
   const genderOptions: Gender[] = ["Male", "Female", "Other"];
 
   const handleGenderChange = (value: string) => {
-    setValue('gender', value, { shouldValidate: true });
+    setValue("gender", value, { shouldValidate: true });
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -333,6 +388,52 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleLocationChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setValue('location', query);
+    if (query.length >= 2) {
+      try {
+        const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        console.log('Location Suggestions:', data.suggestions); // Log the suggestions
+        setLocationSuggestions(data.suggestions || []);
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+        setLocationSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } else {
+      setLocationSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleLocationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const newIndex =
+        e.key === "ArrowDown"
+          ? Math.min(selectedIndex + 1, locationSuggestions.length - 1)
+          : Math.max(selectedIndex - 1, -1);
+      setSelectedIndex(newIndex);
+    } else if (e.key === "Enter" && selectedIndex >= 0) {
+      e.preventDefault();
+      const selected = locationSuggestions[selectedIndex];
+      setValue("location", selected.fullName);
+      setValue("latitude", selected.latitude.toString());
+      setValue("longitude", selected.longitude.toString());
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: any) => {
+    setValue("location", suggestion.fullName);
+    setValue("latitude", suggestion.latitude.toString());
+    setValue("longitude", suggestion.longitude.toString());
+    setShowSuggestions(false);
   };
 
   return (
@@ -349,13 +450,20 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
             {...register("photoUrl")}
             onChange={(e) => setPhotoPreview(e.target.value)}
           />
-          <p className="text-sm text-gray-500 mt-1">Enter a URL for your profile photo or upload a new one.</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Enter a URL for your profile photo or upload a new one.
+          </p>
         </div>
       </div>
       <div>
-        <Input placeholder="Name" {...register("name", { required: "Name is required" })} />
+        <Input
+          placeholder="Name"
+          {...register("name", { required: "Name is required" })}
+        />
         {errors.name && (
-          <p className="text-sm text-red-500 mt-1">{errors.name.message as string}</p>
+          <p className="text-sm text-red-500 mt-1">
+            {errors.name.message as string}
+          </p>
         )}
       </div>
       <div>
@@ -366,12 +474,14 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
             required: "Email is required",
             pattern: {
               value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: "Invalid email address"
-            }
+              message: "Invalid email address",
+            },
           })}
         />
         {errors.email && (
-          <p className="text-sm text-red-500 mt-1">{errors.email.message as string}</p>
+          <p className="text-sm text-red-500 mt-1">
+            {errors.email.message as string}
+          </p>
         )}
       </div>
       <div>
@@ -380,83 +490,48 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
           placeholder="Age"
           {...register("age", {
             required: "Age is required",
-            min: { value: 18, message: "Must be 18 or older" }
+            min: { value: 18, message: "Must be 18 or older" },
           })}
         />
         {errors.age && (
-          <p className="text-sm text-red-500 mt-1">{errors.age.message as string}</p>
+          <p className="text-sm text-red-500 mt-1">
+            {errors.age.message as string}
+          </p>
         )}
       </div>
       <div className="relative">
-        <div className="flex items-center">
-          <Input
-            placeholder="Location"
-            {...register("location", { required: "Location is required" })}
-            onChange={async (e) => {
-              const query = e.target.value;
-              setValue('location', query);
-              if (query.length >= 2) {
-                try {
-                  setShowSuggestions(true);
-                  const response = await fetch(`/api/locations/suggest?q=${encodeURIComponent(query)}`);
-                  const data = await response.json();
-                  setLocationSuggestions(data.suggestions || []);
-                } catch (error) {
-                  console.error('Error fetching locations:', error);
-                  setLocationSuggestions([]);
-                }
-              } else {
-                setLocationSuggestions([]);
-                setShowSuggestions(false);
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                e.preventDefault();
-                const newIndex = e.key === 'ArrowDown'
-                  ? Math.min(selectedIndex + 1, locationSuggestions.length - 1)
-                  : Math.max(selectedIndex - 1, -1);
-                setSelectedIndex(newIndex);
-              } else if (e.key === 'Enter' && selectedIndex >= 0) {
-                e.preventDefault();
-                const selected = locationSuggestions[selectedIndex];
-                setValue('location', selected.fullName);
-                setValue('latitude', selected.latitude.toString());
-                setValue('longitude', selected.longitude.toString());
-                setShowSuggestions(false);
-              }
-            }}
-          />
-          {showSuggestions && (
-            <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-              {locationSuggestions.length === 0 ? (
-                <div className="p-2 text-gray-500 italic">No results found</div>
-              ) : (
-                locationSuggestions.map((suggestion, index) => (
-                  <div
-                    key={`${suggestion.name}-${index}`}
-                    className={`p-2 cursor-pointer hover:bg-gray-100 ${
-                      index === selectedIndex ? 'bg-gray-200' : ''
-                    }`}
-                    onClick={() => {
-                      setValue('location', suggestion.fullName);
-                      setValue('latitude', suggestion.latitude.toString());
-                      setValue('longitude', suggestion.longitude.toString());
-                      setShowSuggestions(false);
-                    }}
-                  >
-                    {suggestion.fullName}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-          {errors.location && (
-            <p className="text-sm text-red-500 mt-1">{errors.location.message as string}</p>
-          )}
-          <input type="hidden" {...register("latitude")} />
-          <input type="hidden" {...register("longitude")} />
-        </div>
+        <Input
+          placeholder="Location"
+          {...register("location", { required: "Location is required" })}
+          onChange={handleLocationChange}
+          onKeyDown={handleLocationKeyDown}
+        />
+        {showSuggestions && (
+          <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+            {locationSuggestions.length === 0 ? (
+              <div className="p-2 text-gray-500 italic">No results found</div>
+            ) : (
+              locationSuggestions.map((suggestion, index) => (
+                <div
+                  key={`${suggestion.name}-${index}`}
+                  className={`p-2 cursor-pointer hover:bg-gray-100 ${
+                    index === selectedIndex ? "bg-gray-200" : ""
+                  }`}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  {suggestion.fullName}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+        {errors.location && (
+          <p className="text-sm text-red-500 mt-1">
+            {errors.location.message as string}
+          </p>
+        )}
+        <input type="hidden" {...register("latitude")} />
+        <input type="hidden" {...register("longitude")} />
       </div>
       <div>
         <Select defaultValue={user.gender} onValueChange={handleGenderChange}>
@@ -471,14 +546,21 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
             ))}
           </SelectContent>
         </Select>
-        <input type="hidden" {...register("gender", { required: "Gender is required" })} />
+        <input
+          type="hidden"
+          {...register("gender", { required: "Gender is required" })}
+        />
         {errors.gender && (
-          <p className="text-sm text-red-500 mt-1">{errors.gender.message as string}</p>
+          <p className="text-sm text-red-500 mt-1">
+            {errors.gender.message as string}
+          </p>
         )}
       </div>
       <div className="social-info">
         <Input placeholder="Social IDs" {...register("socialIds")} />
-        <p className="text-sm text-gray-500 mt-1">Add your social media handles (comma-separated)</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Add your social media handles (comma-separated)
+        </p>
       </div>
       <div>
         <Textarea
@@ -486,7 +568,9 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
           {...register("publicDescription")}
           className="h-24"
         />
-        <p className="text-sm text-gray-500 mt-1">This will be visible to other users</p>
+        <p className="text-sm text-gray-500 mt-1">
+          This will be visible to other users
+        </p>
       </div>
       <div>
         <Textarea
@@ -513,7 +597,17 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
   );
 }
 
-function UserList({ users, onSelect, filters, setFilters }: { users: UserWithMatch[]; onSelect: (user: UserWithMatch) => void; filters: any; setFilters: any }) {
+function UserList({
+  users,
+  onSelect,
+  filters,
+  setFilters,
+}: {
+  users: UserWithMatch[];
+  onSelect: (user: UserWithMatch) => void;
+  filters: any;
+  setFilters: any;
+}) {
   return (
     <div>
       <div className="mb-6">
@@ -529,7 +623,9 @@ function UserList({ users, onSelect, filters, setFilters }: { users: UserWithMat
                   type="number"
                   placeholder="Min Age"
                   value={filters.minAge}
-                  onChange={(e) => setFilters({ ...filters, minAge: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, minAge: e.target.value })
+                  }
                 />
               </div>
               <div>
@@ -537,13 +633,17 @@ function UserList({ users, onSelect, filters, setFilters }: { users: UserWithMat
                   type="number"
                   placeholder="Max Age"
                   value={filters.maxAge}
-                  onChange={(e) => setFilters({ ...filters, maxAge: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, maxAge: e.target.value })
+                  }
                 />
               </div>
               <div>
                 <Select
                   value={filters.gender}
-                  onValueChange={(value) => setFilters({ ...filters, gender: value })}
+                  onValueChange={(value) =>
+                    setFilters({ ...filters, gender: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Gender" />
@@ -561,7 +661,9 @@ function UserList({ users, onSelect, filters, setFilters }: { users: UserWithMat
                   type="number"
                   placeholder="Max Distance (km)"
                   value={filters.maxDistance}
-                  onChange={(e) => setFilters({ ...filters, maxDistance: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, maxDistance: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -602,7 +704,13 @@ function UserList({ users, onSelect, filters, setFilters }: { users: UserWithMat
   );
 }
 
-function UserProfile({ user, onClose }: { user: UserWithMatch; onClose: () => void }) {
+function UserProfile({
+  user,
+  onClose,
+}: {
+  user: UserWithMatch;
+  onClose: () => void;
+}) {
   return (
     <Card>
       <CardContent className="p-6">
@@ -621,7 +729,9 @@ function UserProfile({ user, onClose }: { user: UserWithMatch; onClose: () => vo
               </span>
             </div>
           </div>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
         </div>
         <div className="space-y-4">
           <div>

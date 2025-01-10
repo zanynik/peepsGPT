@@ -1,12 +1,11 @@
-
-import axios from 'axios';
-import { env } from 'process';
+import axios from "axios";
+import { env } from "process";
 
 if (!env.GEONAMES_USERNAME) {
-  throw new Error('GEONAMES_USERNAME environment variable is required');
+  throw new Error("GEONAMES_USERNAME environment variable is required");
 }
 
-const GEONAMES_API_URL = 'http://api.geonames.org/searchJSON';
+const GEONAMES_API_URL = "http://api.geonames.org/searchJSON";
 
 export interface LocationData {
   name: string;
@@ -23,8 +22,9 @@ export interface LocationSuggestion {
 }
 
 export async function getSuggestions(query: string): Promise<LocationSuggestion[]> {
+  console.log('getSuggestions called with query:', query); // Add this line
   if (!query || query.length < 2) return [];
-  
+
   try {
     const response = await axios.get(GEONAMES_API_URL, {
       params: {
@@ -37,6 +37,8 @@ export async function getSuggestions(query: string): Promise<LocationSuggestion[
         cities: 'cities1000'
       }
     });
+
+    console.log('GeoNames API Response:', response.data); // Log the response
 
     if (!response.data?.geonames) return [];
 
@@ -54,15 +56,17 @@ export async function getSuggestions(query: string): Promise<LocationSuggestion[
   }
 }
 
-export async function validateAndGetLocation(location: string): Promise<LocationData | null> {
+export async function validateAndGetLocation(
+  location: string,
+): Promise<LocationData | null> {
   try {
     const response = await axios.get(GEONAMES_API_URL, {
       params: {
         q: location,
         maxRows: 1,
         username: env.GEONAMES_USERNAME,
-        style: 'FULL'
-      }
+        style: "FULL",
+      },
     });
 
     const data = response.data;
@@ -72,12 +76,12 @@ export async function validateAndGetLocation(location: string): Promise<Location
         name: `${place.name}, ${place.countryName}`,
         latitude: parseFloat(place.lat),
         longitude: parseFloat(place.lng),
-        countryName: place.countryName
+        countryName: place.countryName,
       };
     }
     return null;
   } catch (error) {
-    console.error('GeoNames API error:', error);
+    console.error("GeoNames API error:", error);
     return null;
   }
 }

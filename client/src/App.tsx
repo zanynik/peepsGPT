@@ -663,8 +663,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
             type="public"
             notes={watch("publicDescription")?.split("\n").filter(Boolean) || []}
             onAdd={(note) => {
-              const currentNotes = watch("publicDescription")?.split("\n").filter(Boolean) || [];
-              setValue("publicDescription", [...currentNotes, note].join("\n"));
+              setValue("publicDescription", note);
             }}
             onDelete={(index) => {
               const currentNotes = watch("publicDescription")?.split("\n").filter(Boolean) || [];
@@ -682,8 +681,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: any }) {
             type="private"
             notes={watch("privateDescription")?.split("\n").filter(Boolean) || []}
             onAdd={(note) => {
-              const currentNotes = watch("privateDescription")?.split("\n").filter(Boolean) || [];
-              setValue("privateDescription", [...currentNotes, note].join("\n"));
+              setValue("privateDescription", note);
             }}
             onDelete={(index) => {
               const currentNotes = watch("privateDescription")?.split("\n").filter(Boolean) || [];

@@ -32,9 +32,18 @@ export const matches = pgTable("matches", {
   createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 });
 
+export const notes = pgTable("notes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  type: text("type").notNull(), // "public" or "private"
+  createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull()
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   matchesAsUser1: many(matches, { relationName: "user1_matches" }),
   matchesAsUser2: many(matches, { relationName: "user2_matches" }),
+  notes: many(notes, {fields: [notes.userId], references: [users.id]})
 }));
 
 export const matchesRelations = relations(matches, ({ one }) => ({
@@ -56,9 +65,13 @@ export const insertUserSchema = createInsertSchema(users, {
 export const selectUserSchema = createSelectSchema(users);
 export const insertMatchSchema = createInsertSchema(matches);
 export const selectMatchSchema = createSelectSchema(matches);
+export const insertNoteSchema = createInsertSchema(notes);
+export const selectNoteSchema = createSelectSchema(notes);
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Match = typeof matches.$inferSelect;
 export type NewMatch = typeof matches.$inferInsert;
+export type Note = typeof notes.$inferSelect;
+export type NewNote = typeof notes.$inferInsert;
 export type Gender = z.infer<typeof genderEnum>;

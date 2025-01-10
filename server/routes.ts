@@ -309,7 +309,25 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/newsletter/toggle", async (req, res) => {
+  app.get("/api/share/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, parseInt(userId))
+  });
+
+  if (!user) return res.status(404).send("User not found");
+
+  const notes = await db.query.notes.findMany({
+    where: and(
+      eq(notes.userId, parseInt(userId)),
+      eq(notes.type, "public")
+    )
+  });
+
+  res.json({ user, notes });
+});
+
+app.post("/api/newsletter/toggle", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
     }

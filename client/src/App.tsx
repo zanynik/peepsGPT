@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Sun, Moon } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { Notes } from "@/components/ui/note";
 import {
   Select,
   SelectContent,

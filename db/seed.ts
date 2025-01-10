@@ -1,6 +1,6 @@
 
 import { db } from "./index";
-import { users } from "./schema";
+import { users, matches } from "./schema";
 import { sql } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";

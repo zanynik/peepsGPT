@@ -370,12 +370,16 @@ export function registerRoutes(app: Express): Server {
         .where(eq(users.id, req.session.userId))
         .returning();
 
-      // Update embedding if description changed
-      if (profile.publicDescription || profile.privateDescription) {
+      // Always update embedding to ensure it stays in sync
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.id, req.session.userId),
+      });
+      
+      if (existingUser) {
         await updateUserEmbedding(
-          user.id, 
-          profile.publicDescription || user.publicDescription,
-          profile.privateDescription || user.privateDescription
+          user.id,
+          profile.publicDescription || existingUser.publicDescription,
+          profile.privateDescription || existingUser.privateDescription
         );
       }
       

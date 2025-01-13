@@ -20,10 +20,18 @@ import { Loader2, HelpCircle, Filter } from "lucide-react";
 import Joyride, { Step, CallBackProps, STATUS } from "react-joyride";
 import type { User, Gender } from "@db/schema";
 
-interface UserWithMatch extends User {
+type UserWithMatch = User & {
   matchPercentage?: number;
   isCurrentUser?: boolean;
-}
+};
+
+type UserProfileProps = {
+  user: UserWithMatch;
+  onClose: () => void;
+  isCurrentUser?: boolean;
+  onUpdateProfile?: (data: any) => void;
+  setIsLoggedIn: (value: boolean) => void;
+};
 
 function App() {
   useEffect(() => {
@@ -838,14 +846,6 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
     </div>
   );
 }
-
-type UserProfileProps = {
-  user: UserWithMatch;
-  onClose: () => void;
-  isCurrentUser?: boolean;
-  onUpdateProfile?: (data: any) => void;
-  setIsLoggedIn: (value: boolean) => void;
-};
 
 function UserProfile({
   user,

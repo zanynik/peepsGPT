@@ -8,10 +8,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, User } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { useQuery } from "@tanstack/react-query";
+import { LoginDialog } from "@/components/ui/login-dialog";
 
 interface Profile {
   id: number;
   username: string;
+  matchPercentage?: number;
   // Add other profile fields as needed
 }
 
@@ -19,7 +21,9 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { user, logout } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
+  // Fetch profiles based on authentication state
   const { data: profiles } = useQuery<Profile[]>({
     queryKey: [user ? '/api/suggested-matches' : '/api/random-profiles'],
     enabled: true,
@@ -49,7 +53,7 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => setLocation("/login")}>
+                <Button variant="ghost" onClick={() => setShowLoginDialog(true)}>
                   Login
                 </Button>
                 <Button onClick={() => setLocation("/register")}>
@@ -93,7 +97,11 @@ export default function Home() {
                     </Avatar>
                     <div>
                       <h3 className="font-medium">{profile.username}</h3>
-                      {/* Add other profile details */}
+                      {profile.matchPercentage && user && (
+                        <p className="text-sm text-muted-foreground">
+                          {profile.matchPercentage}% Match
+                        </p>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -102,6 +110,9 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* Login Dialog */}
+      <LoginDialog open={showLoginDialog} onOpenChange={setShowLoginDialog} />
     </div>
   );
 }

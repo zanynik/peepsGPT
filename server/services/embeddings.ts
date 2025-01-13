@@ -25,7 +25,9 @@ export async function updateUserEmbedding(userId: number, publicDesc: string, pr
   const embedding = await generateEmbedding(combinedText);
   
   await db.execute(
-    sql`UPDATE users SET embedding = ${embedding}::vector WHERE id = ${userId}`
+    sql`UPDATE users 
+        SET embedding = array_to_vector(ARRAY[${sql.join(embedding)}]::float[]) 
+        WHERE id = ${userId}`
   );
 }
 
@@ -39,7 +41,9 @@ export async function vectorizeAllProfiles() {
     try {
       const embedding = await generateEmbedding(combinedText);
       await db.execute(
-        sql`UPDATE users SET embedding = ${embedding}::vector WHERE id = ${user.id}`
+        sql`UPDATE users 
+            SET embedding = array_to_vector(ARRAY[${sql.join(embedding)}]::float[]) 
+            WHERE id = ${user.id}`
       );
       
       console.log(`Updated embedding for user ${user.id}`);

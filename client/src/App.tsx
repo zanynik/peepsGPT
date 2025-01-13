@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, HelpCircle, Filter } from "lucide-react";
+import { Loader2, Filter } from "lucide-react";
 
 // Define Gender type
 type Gender = "Male" | "Female" | "Other";
@@ -37,7 +37,6 @@ interface User {
 
 type UserWithMatch = User & {
   matchPercentage?: number;
-  isCurrentUser?: boolean;
 };
 
 interface UserProfileProps {
@@ -56,6 +55,11 @@ function App() {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     }
+    // Check if user was previously logged in
+    const wasLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    if (wasLoggedIn) {
+      setIsLoggedIn(true);
+    }
   }, []);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -69,18 +73,10 @@ function App() {
     enabled: isLoggedIn,
   });
 
-  const { data: demoUsers = [] } = useQuery<UserWithMatch[]>({
-    queryKey: ["/api/demo-users"],
-    enabled: !isLoggedIn,
+  // Fetch users regardless of login state
+  const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
+    queryKey: ["/api/users"],
   });
-
-  useEffect(() => {
-    const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
-    if (isLoggedIn && !hasSeenTutorial) {
-      //setRunTutorial(true);  // Removed tutorial logic
-    }
-  }, [isLoggedIn]);
-
 
   const loginMutation = useMutation({
     mutationFn: async (data: { username: string; password: string }) => {
@@ -96,6 +92,7 @@ function App() {
       setIsLoggedIn(true);
       sessionStorage.setItem('isLoggedIn', 'true');
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message });
@@ -103,7 +100,7 @@ function App() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: Omit<User, 'id'>) => {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -114,7 +111,9 @@ function App() {
     },
     onSuccess: () => {
       setIsLoggedIn(true);
+      sessionStorage.setItem('isLoggedIn', 'true');
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message });
@@ -133,12 +132,19 @@ function App() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: "Success", description: "Profile updated" });
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message });
     },
   });
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    sessionStorage.removeItem('isLoggedIn');
+    setSelectedUser(null); // Return to home screen
+  };
 
   if (isLoggedIn && userLoading) {
     return (
@@ -203,22 +209,23 @@ function App() {
           </header>
 
           <main className="container mx-auto">
-              {selectedUser ? (
-                <UserProfile
-                  user={selectedUser}
-                  onClose={() => setSelectedUser(null)}
-                  isCurrentUser={'isCurrentUser' in selectedUser}
-                  onUpdateProfile={updateProfileMutation.mutate}
-                  setIsLoggedIn={setIsLoggedIn}
+            {selectedUser ? (
+              <UserProfile
+                user={selectedUser}
+                onClose={() => setSelectedUser(null)}
+                isCurrentUser={'isCurrentUser' in selectedUser}
+                onUpdateProfile={updateProfileMutation.mutate}
+                setIsLoggedIn={handleLogout}
+              />
+            ) : (
+              <div className="matches-section space-y-6">
+                <UserList 
+                  onSelect={setSelectedUser} 
+                  users={users}
+                  isLoggedIn={isLoggedIn}
                 />
-              ) : (
-                <div className="matches-section space-y-6">
-                  <UserList 
-                    onSelect={setSelectedUser} 
-                    users={isLoggedIn ? undefined : demoUsers}
-                  />
-                </div>
-              )}
+              </div>
+            )}
           </main>
         </div>
       </div>
@@ -405,24 +412,20 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
   );
 }
 
-function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void; users?: UserWithMatch[] }) {
+function UserList({ 
+  onSelect, 
+  users,
+  isLoggedIn 
+}: { 
+  onSelect: (user: UserWithMatch) => void;
+  users: UserWithMatch[];
+  isLoggedIn: boolean;
+}) {
   const [filters, setFilters] = useState({
     minAge: "18",
     maxAge: "75",
     gender: "all",
     maxDistance: "0",
-  });
-
-  const { data: loggedInUsers = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
-    queryKey: ["/api/users", filters],
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/users?minAge=${filters.minAge}&maxAge=${filters.maxAge}&gender=${filters.gender}&maxDistance=${filters.maxDistance}`
-      );
-      if (!res.ok) throw new Error("Failed to fetch users");
-      return res.json();
-    },
-    enabled: !users,
   });
 
   const [showFilters, setShowFilters] = useState(false);
@@ -439,15 +442,13 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
     setShowFilters(false);
   };
 
-  if (usersLoading) {
+  if (!users) {
     return (
       <div className="flex items-center justify-center h-40">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
-
-  const displayUsers = users || loggedInUsers;
 
   return (
     <div className="space-y-6">
@@ -464,7 +465,7 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
         </div>
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Suggested Matches</h2>
-          {!users && (
+          {!isLoggedIn && (
             <Button
               variant="outline"
               className="flex items-center gap-2"
@@ -581,7 +582,7 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {displayUsers.map((user) => (
+        {users.map((user) => (
           <Card
             key={user.id}
             className="group cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden bg-card/50"
@@ -606,7 +607,7 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
                       {user.age} • {user.gender}
                     </p>
                   </div>
-                  {!users && user.matchPercentage && (
+                  {isLoggedIn && user.matchPercentage && (
                     <div className="text-right">
                       <span className="inline-block px-2 py-1 text-sm font-semibold rounded-full bg-primary/10 text-primary">
                         {user.matchPercentage}% Match
@@ -726,7 +727,7 @@ function UserProfile({ user, onClose, isCurrentUser, onUpdateProfile, setIsLogge
   );
 }
 
-function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: User) => void; isDemo?: boolean }) {
+function ProfileForm({ user, onSubmit }: { user: User; onSubmit: (data: User) => void }) {
   const {
     register,
     handleSubmit,
@@ -754,32 +755,30 @@ function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: 
         <Avatar className="h-24 w-24 ring-4 ring-background">
           <img src={photoPreview} alt={user.name} className="object-cover" />
         </Avatar>
-        {!isDemo && (
-          <div className="mt-4 w-full">
-            <div className="flex items-center gap-4">
-              <Input
-                type="file"
-                className="hidden"
-                id="photo-upload"
-                onChange={handlePhotoChange}
-              />
-              <label
-                htmlFor="photo-upload"
-                className="cursor-pointer bg-muted hover:bg-muted/80 px-4 py-2 rounded-md text-sm font-medium"
-              >
-                Upload Photo
-              </label>
-              <p className="text-sm text-muted-foreground">or</p>
-              <Input
-                type="url"
-                placeholder="Photo URL"
-                {...register("photoUrl")}
-                onChange={(e) => setPhotoPreview(e.target.value)}
-                className="flex-1"
-              />
-            </div>
+        <div className="mt-4 w-full">
+          <div className="flex items-center gap-4">
+            <Input
+              type="file"
+              className="hidden"
+              id="photo-upload"
+              onChange={handlePhotoChange}
+            />
+            <label
+              htmlFor="photo-upload"
+              className="cursor-pointer bg-muted hover:bg-muted/80 px-4 py-2 rounded-md text-sm font-medium"
+            >
+              Upload Photo
+            </label>
+            <p className="text-sm text-muted-foreground">or</p>
+            <Input
+              type="url"
+              placeholder="Photo URL"
+              {...register("photoUrl")}
+              onChange={(e) => setPhotoPreview(e.target.value)}
+              className="flex-1"
+            />
           </div>
-        )}
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -791,7 +790,6 @@ function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: 
           <Input
             placeholder="Name"
             {...register("name", { required: "Name is required" })}
-            disabled={isDemo}
           />
           {errors.name && (
             <p className="text-sm text-destructive mt-1">
@@ -815,7 +813,6 @@ function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: 
                 message: "Invalid email address",
               },
             })}
-            disabled={isDemo}
           />
           {errors.email && (
             <p className="text-sm text-destructive mt-1">
@@ -836,7 +833,6 @@ function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: 
               required: "Age is required",
               min: { value: 18, message: "Must be 18 or older" },
             })}
-            disabled={isDemo}
           />
           {errors.age && (
             <p className="text-sm text-destructive mt-1">
@@ -850,7 +846,6 @@ function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: 
           <Select 
             defaultValue={user.gender}
             onValueChange={(value) => setValue("gender", value)}
-            disabled={isDemo}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select gender" />
@@ -881,7 +876,6 @@ function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: 
         <Input
           placeholder="Location"
           {...register("location", { required: "Location is required" })}
-          disabled={isDemo}
         />
         {errors.location && (
           <p className="text-sm text-destructive mt-1">
@@ -896,7 +890,6 @@ function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: 
           <Textarea
             {...register("publicDescription")}
             placeholder="Tell others about yourself"
-            disabled={isDemo}
           />
         </div>
 
@@ -905,18 +898,15 @@ function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: 
           <Textarea
             {...register("privateDescription")}
             placeholder="Write private notes about yourself"
-            disabled={isDemo}
           />
         </div>
       </div>
 
-      {!isDemo && (
-        <div className="pt-4 border-t">
-          <Button type="submit" className="w-full">
-            Update Profile
-          </Button>
-        </div>
-      )}
+      <div className="pt-4 border-t">
+        <Button type="submit" className="w-full">
+          Update Profile
+        </Button>
+      </div>
     </form>
   );
 }

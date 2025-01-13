@@ -847,13 +847,16 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
   );
 }
 
-function UserProfile({
-  user,
-  onClose,
-  isCurrentUser,
-  onUpdateProfile,
-  setIsLoggedIn,
-}: UserProfileProps) {
+type UserProfileProps = {
+  user: UserWithMatch;
+  onClose: () => void;
+  isCurrentUser?: boolean;
+  onUpdateProfile?: (data: any) => void;
+  setIsLoggedIn: (value: boolean) => void;
+};
+
+function UserProfile(props: UserProfileProps) {
+  const { user, onClose, isCurrentUser, onUpdateProfile, setIsLoggedIn } = props;
   return (
     <Card className="overflow-hidden">
       <div className="profile-header">

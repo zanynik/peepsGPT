@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -23,9 +24,9 @@ export async function updateUserEmbedding(userId: number, publicDesc: string, pr
   
   const embedding = await generateEmbedding(combinedText);
   
-  await db.update(users)
-    .set({ embedding })
-    .where(eq(users.id, userId));
+  await db.execute(
+    sql`UPDATE users SET embedding = ${embedding}::vector WHERE id = ${userId}`
+  );
 }
 
 export async function vectorizeAllProfiles() {
@@ -37,9 +38,9 @@ export async function vectorizeAllProfiles() {
     
     try {
       const embedding = await generateEmbedding(combinedText);
-      await db.update(users)
-        .set({ embedding })
-        .where(eq(users.id, user.id));
+      await db.execute(
+        sql`UPDATE users SET embedding = ${embedding}::vector WHERE id = ${user.id}`
+      );
       
       console.log(`Updated embedding for user ${user.id}`);
     } catch (error) {

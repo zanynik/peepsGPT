@@ -2,7 +2,6 @@
 import OpenAI from 'openai';
 import { db } from '@db';
 import { users } from '@db/schema';
-import { eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
 const openai = new OpenAI({
@@ -12,7 +11,8 @@ const openai = new OpenAI({
 export async function generateEmbedding(text: string) {
   const response = await openai.embeddings.create({
     input: text,
-    model: "text-embedding-ada-002"
+    model: "text-embedding-3-small",
+    encoding_format: "float",
   });
   
   return response.data[0].embedding;
@@ -24,11 +24,11 @@ export async function updateUserEmbedding(userId: number, publicDesc: string, pr
   
   const embedding = await generateEmbedding(combinedText);
   
-  await db.execute(
-    sql`UPDATE users 
-        SET embedding = array_to_vector(ARRAY[${sql.join(embedding)}]::float[]) 
-        WHERE id = ${userId}`
-  );
+  await db.execute(sql`
+    UPDATE users 
+    SET embedding = ${sql.raw(`'[${embedding.join(',')}]'::vector`)}
+    WHERE id = ${userId}
+  `);
 }
 
 export async function vectorizeAllProfiles() {
@@ -40,11 +40,11 @@ export async function vectorizeAllProfiles() {
     
     try {
       const embedding = await generateEmbedding(combinedText);
-      await db.execute(
-        sql`UPDATE users 
-            SET embedding = array_to_vector(ARRAY[${sql.join(embedding)}]::float[]) 
-            WHERE id = ${user.id}`
-      );
+      await db.execute(sql`
+        UPDATE users 
+        SET embedding = ${sql.raw(`'[${embedding.join(',')}]'::vector`)}
+        WHERE id = ${user.id}
+      `);
       
       console.log(`Updated embedding for user ${user.id}`);
     } catch (error) {

@@ -11,6 +11,7 @@ import { startNewsletterScheduler } from "./services/newsletter";
 import { validateAndGetLocation, getSuggestions } from "./services/geonames";
 import { z } from "zod";
 import { setupWebSocket } from "./websocket";
+import { updateUserEmbedding } from './services/embeddings';
 
 declare module "express-session" {
   interface SessionData {
@@ -331,9 +332,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  import { updateUserEmbedding } from './services/embeddings';
-
-app.put("/api/profile", async (req, res) => {
+  app.put("/api/profile", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
     }

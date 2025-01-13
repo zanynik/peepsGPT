@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { users, matches, genderEnum } from "@db/schema";
+import { users, matches, genderEnum, messages, notifications } from "@db/schema";
 import { eq, and, desc, between } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -10,6 +10,7 @@ import createMemoryStore from "memorystore";
 import { startNewsletterScheduler } from "./services/newsletter";
 import { validateAndGetLocation, getSuggestions } from "./services/geonames";
 import { z } from "zod";
+import { setupWebSocket } from "./websocket";
 
 declare module "express-session" {
   interface SessionData {
@@ -44,18 +45,19 @@ export function registerRoutes(app: Express): Server {
       if (typeof q !== 'string' || q.length < 2) {
         return res.status(400).json({ suggestions: [] });
       }
-      
+
       const suggestions = await getSuggestions(q);
       if (!suggestions || suggestions.length === 0) {
         return res.json({ suggestions: [] });
       }
-      
+
       res.json({ suggestions });
     } catch (error: any) {
       console.error("Location suggestion error:", error);
       res.json({ suggestions: [] });
     }
   });
+
   const MemoryStore = createMemoryStore(session);
   app.use(
     session({
@@ -67,6 +69,67 @@ export function registerRoutes(app: Express): Server {
       }),
     })
   );
+
+  // Add messaging endpoints
+  app.get("/api/messages/:userId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      const messages = await db.query.messages.findMany({
+        where: and(
+          eq(messages.senderId, req.session.userId),
+          eq(messages.receiverId, parseInt(req.params.userId))
+        ),
+        orderBy: desc(messages.createdAt),
+        limit: 50
+      });
+
+      res.json(messages);
+    } catch (error: any) {
+      console.error("Get messages error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
+  });
+
+  app.get("/api/notifications", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      const notifications = await db.query.notifications.findMany({
+        where: eq(notifications.userId, req.session.userId),
+        orderBy: desc(notifications.createdAt),
+        limit: 20
+      });
+
+      res.json(notifications);
+    } catch (error: any) {
+      console.error("Get notifications error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
+  });
+
+  app.post("/api/notifications/read", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      const [notification] = await db
+        .update(notifications)
+        .set({ read: true })
+        .where(eq(notifications.id, req.body.notificationId))
+        .returning();
+
+      res.json(notification);
+    } catch (error: any) {
+      console.error("Mark notification read error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
+  });
 
   app.post("/api/register", async (req, res) => {
     try {
@@ -310,24 +373,24 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.get("/api/share/:userId", async (req, res) => {
-  const { userId } = req.params;
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, parseInt(userId))
+    const { userId } = req.params;
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, parseInt(userId))
+    });
+
+    if (!user) return res.status(404).send("User not found");
+
+    const notes = await db.query.notes.findMany({
+      where: and(
+        eq(notes.userId, parseInt(userId)),
+        eq(notes.type, "public")
+      )
+    });
+
+    res.json({ user, notes });
   });
 
-  if (!user) return res.status(404).send("User not found");
-
-  const notes = await db.query.notes.findMany({
-    where: and(
-      eq(notes.userId, parseInt(userId)),
-      eq(notes.type, "public")
-    )
-  });
-
-  res.json({ user, notes });
-});
-
-app.post("/api/newsletter/toggle", async (req, res) => {
+  app.post("/api/newsletter/toggle", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
     }
@@ -355,6 +418,9 @@ app.post("/api/newsletter/toggle", async (req, res) => {
   });
 
   const httpServer = createServer(app);
+
+  // Setup WebSocket server
+  setupWebSocket(httpServer, app);
 
   // Start the newsletter scheduler
   startNewsletterScheduler();

@@ -316,7 +316,6 @@ interface AuthFormProps {
 }
 
 function AuthForm({ onLogin, onRegister, onClose, isLogin }: AuthFormProps) {
-  const [showRegister, setShowRegister] = useState(isLogin ? false : true);
   const {
     register,
     handleSubmit,
@@ -324,15 +323,18 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin }: AuthFormProps) {
   } = useForm();
 
   const onSubmit = handleSubmit((data) => {
-    if (showRegister) {
-      onRegister(data);
-    } else {
+    if (isLogin) {
       onLogin(data);
+    } else {
+      onRegister(data);
     }
   });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit(isLogin ? onLogin : onRegister)}
+      className="space-y-4"
+    >
       <div>
         <Input
           placeholder="Username"
@@ -356,7 +358,7 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin }: AuthFormProps) {
           </p>
         )}
       </div>
-      {showRegister && (
+      {!isLogin && (
         <>
           <div>
             <Input
@@ -402,10 +404,9 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin }: AuthFormProps) {
       <Button
         variant="link"
         className="w-full"
-        onClick={() => setShowRegister(!showRegister)}
-        type="button"
+        onClick={() => setShowAuthForm(isLogin ? 'register' : 'login')}
       >
-        {showRegister ? "Already have an account?" : "Need an account?"}
+        {isLogin ? "Need an account?" : "Already have an account?"}
       </Button>
     </form>
   );

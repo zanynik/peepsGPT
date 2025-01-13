@@ -150,14 +150,14 @@ function App() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <header className="flex justify-between items-center mb-8">
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-4 max-w-5xl">
+          <header className="flex justify-between items-center mb-6 border-b pb-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-semibold text-primary">
                 PeepsGPT
               </h1>
-              <p className="text-muted-foreground mt-2">
+              <p className="text-sm text-muted-foreground mt-1">
                 Connect with like-minded people - Your Peeps!
               </p>
             </div>
@@ -455,8 +455,8 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
         <div className="relative">
           <h2 className="text-xl items-center font-bold">Who do you want to connect with?</h2>
           <Input
-            className="w-full pl-10 pr-4 py-2"
-            placeholder="Message PeepsGPT"
+            className="w-full pl-10 pr-4 py-3 rounded-xl border-primary/20 bg-muted/50 focus-visible:ring-primary/20"
+            placeholder="Message PeepsGPT..."
           />
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-muted-foreground" />
@@ -584,7 +584,7 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
         {displayUsers.map((user) => (
           <Card
             key={user.id}
-            className="group cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden"
+            className="group cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden bg-card/50"
             onClick={() => onSelect(user)}
           >
             <div className="aspect-video relative">

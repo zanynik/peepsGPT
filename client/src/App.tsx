@@ -218,12 +218,20 @@ function App() {
                   </Avatar>
                 </Button>
               ) : (
-                <Button 
-                  variant="default"
-                  onClick={() => setShowAuthForm(true)}
-                >
-                  Login / Sign Up
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="default"
+                    onClick={() => setShowAuthForm('login')}
+                  >
+                    Login
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowAuthForm('register')}
+                  >
+                    Sign Up
+                  </Button>
+                </div>
               )}
             </div>
           </header>
@@ -285,19 +293,24 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
     formState: { errors },
   } = useForm();
 
-  const onSubmit = handleSubmit((data) => {
+  const onSubmit = handleSubmit(async (data) => {
     if (isLogin) {
-      onLogin(data);
+      await onLogin(data);
+      onClose();
     } else {
-      onRegister(data);
+      await onRegister({
+        ...data,
+        photoUrl: "https://via.placeholder.com/150",
+        publicDescription: "",
+        privateDescription: "",
+        socialIds: "",
+      });
+      onClose();
     }
   });
 
   return (
-    <form
-      onSubmit={handleSubmit(isLogin ? onLogin : onRegister)}
-      className="space-y-4"
-    >
+    <form onSubmit={onSubmit} className="space-y-4">
       <div>
         <Input
           placeholder="Username"
@@ -349,6 +362,55 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
             {errors.name && (
               <p className="text-sm text-red-500 mt-1">
                 {errors.name.message as string}
+              </p>
+            )}
+          </div>
+          <div>
+            <Input
+              type="number"
+              placeholder="Age"
+              {...register("age", { 
+                required: "Age is required",
+                min: { value: 18, message: "Must be 18 or older" }
+              })}
+            />
+            {errors.age && (
+              <p className="text-sm text-red-500 mt-1">
+                {errors.age.message as string}
+              </p>
+            )}
+          </div>
+          <div>
+            <Input
+              placeholder="Location"
+              {...register("location", { required: "Location is required" })}
+            />
+            {errors.location && (
+              <p className="text-sm text-red-500 mt-1">
+                {errors.location.message as string}
+              </p>
+            )}
+          </div>
+          <div>
+            <Select 
+              onValueChange={(value) => setValue("gender", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Male">Male</SelectItem>
+                <SelectItem value="Female">Female</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            <input
+              type="hidden"
+              {...register("gender", { required: "Gender is required" })}
+            />
+            {errors.gender && (
+              <p className="text-sm text-red-500 mt-1">
+                {errors.gender.message as string}
               </p>
             )}
           </div>

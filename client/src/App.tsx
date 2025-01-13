@@ -105,6 +105,7 @@ function App() {
     },
     onSuccess: () => {
       setIsLoggedIn(true);
+      sessionStorage.setItem('isLoggedIn', 'true');
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: (error) => {
@@ -160,21 +161,7 @@ function App() {
 
   return (
     <>
-      <Joyride
-        steps={tutorialSteps}
-        run={runTutorial}
-        continuous
-        showProgress
-        showSkipButton
-        callback={handleJoyrideCallback}
-        styles={{
-          options: {
-            primaryColor: "hsl(var(--primary))",
-            backgroundColor: "hsl(var(--background))",
-            textColor: "hsl(var(--foreground))",
-          },
-        }}
-      />
+      {/*Removed Joyride component as per user request*/}
 
       <div className="min-h-screen bg-gradient-to-br from-background to-muted">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -200,14 +187,7 @@ function App() {
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Toggle theme</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRunTutorial(true)}
-              >
-                <HelpCircle className="h-4 w-4 mr-2" />
-                Tutorial
-              </Button>
+              {/*Removed Tutorial button as per user request*/}
               {isLoggedIn ? (
                 <Button 
                   variant="default"
@@ -892,9 +872,19 @@ function UserProfile({
               )}
             </div>
           </div>
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+            {isCurrentUser && (
+              <Button variant="outline" onClick={() => {
+                setIsLoggedIn(false);
+                sessionStorage.removeItem('isLoggedIn');
+              }}>
+                Logout
+              </Button>
+            )}
+          </div>
         </div>
 
         {isCurrentUser ? (

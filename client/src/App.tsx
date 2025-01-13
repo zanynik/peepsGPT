@@ -838,19 +838,21 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
   );
 }
 
+interface UserProfileProps {
+  user: UserWithMatch;
+  onClose: () => void;
+  isCurrentUser?: boolean;
+  onUpdateProfile?: (data: any) => void;
+  setIsLoggedIn: (value: boolean) => void;
+}
+
 function UserProfile({
   user,
   onClose,
   isCurrentUser,
   onUpdateProfile,
   setIsLoggedIn,
-}: {
-  user: UserWithMatch;
-  onClose: () => void;
-  isCurrentUser?: boolean;
-  onUpdateProfile?: (data: any) => void;
-  setIsLoggedIn: (value: boolean) => void;
-}) {
+}: UserProfileProps) {
   return (
     <Card className="overflow-hidden">
       <div className="profile-header">

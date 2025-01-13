@@ -308,12 +308,27 @@ function App() {
   );
 }
 
-function AuthForm({ onLogin, onRegister, onClose, isLogin }: any) {
+interface AuthFormProps {
+  onLogin: (data: any) => void;
+  onRegister: (data: any) => void;
+  onClose: () => void;
+  isLogin: boolean;
+}
+
+function AuthForm({ onLogin, onRegister, onClose, isLogin }: AuthFormProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
+
+  const onSubmit = handleSubmit((data) => {
+    if (isLogin) {
+      onLogin(data);
+    } else {
+      onRegister(data);
+    }
+  });
 
   return (
     <form
@@ -389,7 +404,7 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin }: any) {
       <Button
         variant="link"
         className="w-full"
-        onClick={() => isLogin ? onRegister : onLogin}
+        onClick={() => setShowAuthForm(isLogin ? 'register' : 'login')}
       >
         {isLogin ? "Need an account?" : "Already have an account?"}
       </Button>

@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, InvalidateQueryFilters } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 interface MessageInputProps {
   receiverId: number;
@@ -11,16 +10,13 @@ interface MessageInputProps {
 
 export function MessageInput({ receiverId }: MessageInputProps) {
   const [message, setMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isSending) return;
+    if (!message.trim()) return;
 
     try {
-      setIsSending(true);
       const response = await fetch("/api/messages", {
         method: "POST",
         headers: {
@@ -32,25 +28,15 @@ export function MessageInput({ receiverId }: MessageInputProps) {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
+      if (!response.ok) throw new Error("Failed to send message");
 
       setMessage("");
-      // Invalidate both messages and conversations queries
-      await Promise.all([
-        queryClient.invalidateQueries([`/api/messages/${receiverId}`]),
-        queryClient.invalidateQueries(["/api/conversations"])
-      ]);
-
+      // Fix the invalidation with proper typing
+      queryClient.invalidateQueries({
+        queryKey: [`/api/messages/${receiverId}`]
+      } as InvalidateQueryFilters);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSending(false);
+      console.error("Error sending message:", error);
     }
   };
 
@@ -63,8 +49,8 @@ export function MessageInput({ receiverId }: MessageInputProps) {
         className="resize-none"
         rows={1}
       />
-      <Button type="submit" size="icon" disabled={isSending}>
-        <Send className={`h-4 w-4 ${isSending ? 'animate-pulse' : ''}`} />
+      <Button type="submit" size="icon">
+        <Send className="h-4 w-4" />
       </Button>
     </form>
   );

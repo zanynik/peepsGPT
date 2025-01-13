@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { users, messages, notifications } from "@db/schema";
-import { eq, and, desc, or } from "drizzle-orm";
-import session from "express-session";
-import createMemoryStore from "memorystore";
+import { users, matches, genderEnum, messages, notifications } from "@db/schema";
+import { eq, and, desc, between } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import session from "express-session";
+import createMemoryStore from "memorystore";
 import { startNewsletterScheduler } from "./services/newsletter";
 import { validateAndGetLocation, getSuggestions } from "./services/geonames";
 import { z } from "zod";
@@ -77,93 +77,18 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const userMessages = await db.query.messages.findMany({
+      const messages = await db.query.messages.findMany({
         where: and(
-          eq(messages.receiverId, parseInt(req.params.userId)),
-          eq(messages.senderId, req.session.userId)
+          eq(messages.senderId, req.session.userId),
+          eq(messages.receiverId, parseInt(req.params.userId))
         ),
-        orderBy: [desc(messages.createdAt)],
+        orderBy: desc(messages.createdAt),
+        limit: 50
       });
 
-      res.json(userMessages);
+      res.json(messages);
     } catch (error: any) {
       console.error("Get messages error:", error);
-      res.status(500).send(error.message || "Server error");
-    }
-  });
-
-  app.post("/api/messages", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).send("Not authenticated");
-    }
-
-    try {
-      const { receiverId, content } = req.body;
-
-      const [newMessage] = await db
-        .insert(messages)
-        .values({
-          senderId: req.session.userId,
-          receiverId,
-          content,
-          read: false,
-        })
-        .returning();
-
-      // Create notification
-      await db.insert(notifications).values({
-        userId: receiverId,
-        type: "message",
-        content: `New message from a user`,
-        read: false,
-      });
-
-      res.json(newMessage);
-    } catch (error: any) {
-      console.error("Send message error:", error);
-      res.status(500).send(error.message || "Server error");
-    }
-  });
-
-  // Get conversations (users with whom the current user has exchanged messages)
-  app.get("/api/conversations", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).send("Not authenticated");
-    }
-
-    try {
-      // Get unique users who have exchanged messages with the current user
-      const conversations = await db.query.messages.findMany({
-        where: or(
-          eq(messages.senderId, req.session.userId),
-          eq(messages.receiverId, req.session.userId)
-        ),
-        orderBy: [desc(messages.createdAt)],
-        with: {
-          sender: true,
-          receiver: true
-        }
-      });
-
-      // Get unique users from conversations
-      const uniqueUsers = new Set();
-      const conversationUsers = conversations
-        .map(msg => {
-          const otherUser = msg.senderId === req.session.userId ? msg.receiver : msg.sender;
-          if (!uniqueUsers.has(otherUser.id)) {
-            uniqueUsers.add(otherUser.id);
-            return {
-              ...otherUser,
-              lastMessage: msg
-            };
-          }
-          return null;
-        })
-        .filter(Boolean);
-
-      res.json(conversationUsers);
-    } catch (error: any) {
-      console.error("Get conversations error:", error);
       res.status(500).send(error.message || "Server error");
     }
   });

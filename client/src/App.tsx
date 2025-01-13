@@ -20,9 +20,6 @@ import { Loader2, Filter } from "lucide-react";
 import { Switch, Route } from "wouter";
 import { AlertCircle } from "lucide-react";
 import { MessagingLayout } from "@/components/messaging/MessagingLayout";
-import ConversationSidebar from "@/components/messaging/ConversationSidebar";
-import MessageThread from "@/components/messaging/MessageThread";
-import { MessageInput } from "@/components/messaging/MessageInput";
 
 // Define Gender type
 type Gender = "Male" | "Female" | "Other";
@@ -182,105 +179,105 @@ function App() {
 
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-4 max-w-5xl">
-        <header className="flex justify-between items-center mb-6 border-b pb-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-primary">
-              PeepsGPT
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Connect with like-minded people - Your Peeps!
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                document.documentElement.classList.toggle('dark');
-                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-              }}
-            >
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-            {isLoggedIn ? (
-              <Button
-                variant="default"
-                onClick={() => setSelectedUser({...currentUser, isCurrentUser: true} as UserWithMatch)}
-              >
-                <Avatar className="h-6 w-6">
-                  <img src={currentUser?.photoUrl} alt={currentUser?.name} />
-                </Avatar>
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  onClick={() => setShowAuthForm('login')}
-                >
-                  Login
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAuthForm('register')}
-                >
-                  Sign Up
-                </Button>
-              </div>
-            )}
-          </div>
-        </header>
+    <Switch>
+      <Route path="/messages" component={MessagingLayout} />
+      <Route path="/">
+        <>
+          <div className="min-h-screen bg-background">
+            <div className="container mx-auto px-4 py-4 max-w-5xl">
+              <header className="flex justify-between items-center mb-6 border-b pb-4">
+                <div>
+                  <h1 className="text-2xl font-semibold text-primary">
+                    PeepsGPT
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Connect with like-minded people - Your Peeps!
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      document.documentElement.classList.toggle('dark');
+                      localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+                    }}
+                  >
+                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+                    <span className="sr-only">Toggle theme</span>
+                  </Button>
+                  {isLoggedIn ? (
+                    <Button
+                      variant="default"
+                      onClick={() => setSelectedUser({...currentUser, isCurrentUser: true} as UserWithMatch)}
+                    >
+                      <Avatar className="h-6 w-6">
+                        <img src={currentUser?.photoUrl} alt={currentUser?.name} />
+                      </Avatar>
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="default"
+                        onClick={() => setShowAuthForm('login')}
+                      >
+                        Login
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAuthForm('register')}
+                      >
+                        Sign Up
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </header>
 
-        <main className="container mx-auto">
-          {isLoggedIn ? (
-            <div className="flex h-[calc(100vh-8rem)]">
-              <Card className="flex-none w-80 h-full border-r">
-                <ConversationSidebar />
-              </Card>
-              <div className="flex-1 h-full">
+              <main className="container mx-auto">
                 {selectedUser ? (
-                  <MessageThread user={selectedUser} />
+                  <UserProfile
+                    user={selectedUser}
+                    onClose={() => setSelectedUser(null)}
+                    isCurrentUser={'isCurrentUser' in selectedUser}
+                    onUpdateProfile={updateProfileMutation.mutate}
+                    setIsLoggedIn={handleLogout}
+                  />
                 ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
-                    Select a conversation to start messaging
+                  <div className="matches-section space-y-6">
+                    <UserList
+                      onSelect={setSelectedUser}
+                      users={users}
+                      isLoggedIn={isLoggedIn}
+                    />
                   </div>
                 )}
-              </div>
+              </main>
             </div>
-          ) : (
-            <div className="matches-section space-y-6">
-              <UserList
-                onSelect={setSelectedUser}
-                users={users}
-                isLoggedIn={isLoggedIn}
-              />
+          </div>
+
+          {showAuthForm && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+              <Card className="w-full max-w-md">
+                <CardContent className="p-6">
+                  <h1 className="text-2xl font-bold mb-4">
+                    {showAuthForm === 'login' ? "Login" : "Register"}
+                  </h1>
+                  <AuthForm
+                    onLogin={loginMutation.mutate}
+                    onRegister={registerMutation.mutate}
+                    onClose={() => setShowAuthForm(false)}
+                    isLogin={showAuthForm === 'login'}
+                    setShowAuthForm={setShowAuthForm}
+                  />
+                </CardContent>
+              </Card>
             </div>
           )}
-        </main>
-      </div>
-
-      {showAuthForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <Card className="w-full max-w-md">
-            <CardContent className="p-6">
-              <h1 className="text-2xl font-bold mb-4">
-                {showAuthForm === 'login' ? "Login" : "Register"}
-              </h1>
-              <AuthForm
-                onLogin={loginMutation.mutate}
-                onRegister={registerMutation.mutate}
-                onClose={() => setShowAuthForm(false)}
-                isLogin={showAuthForm === 'login'}
-                setShowAuthForm={setShowAuthForm}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+        </>
+      </Route>
+    </Switch>
   );
 }
 
@@ -705,13 +702,10 @@ function UserProfile({ user, onClose, isCurrentUser, onUpdateProfile, setIsLogge
               Close
             </Button>
             {isCurrentUser && (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setIsLoggedIn(false);
-                  sessionStorage.removeItem('isLoggedIn');
-                }}
-              >
+              <Button variant="outline" onClick={() => {
+                setIsLoggedIn(false);
+                sessionStorage.removeItem('isLoggedIn');
+              }}>
                 Logout
               </Button>
             )}
@@ -721,26 +715,20 @@ function UserProfile({ user, onClose, isCurrentUser, onUpdateProfile, setIsLogge
         {isCurrentUser ? (
           <ProfileForm user={user} onSubmit={onUpdateProfile} />
         ) : (
-          <div className="grid gap-8">
+          <div className="grid gap-8 md:grid-cols-2">
             <div>
               <h3 className="text-lg font-semibold mb-4">About</h3>
               <div className="space-y-4">
-                {user.publicDescription?.split("\n").map((paragraph, i) => (
+                {user.publicDescription?.split("\n").map((note, i) => (
                   <div
                     key={i}
                     className="p-4 rounded-lg bg-muted/50"
                   >
-                    {paragraph}
+                    {note}
                   </div>
                 ))}
               </div>
             </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Send a Message</h3>
-              <MessageInput receiverId={user.id} />
-            </div>
-
             <div>
               <h3 className="text-lg font-semibold mb-4">Contact</h3>
               <div className="space-y-4">

@@ -155,10 +155,10 @@ function App() {
           <header className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Matching Platform
+                PeepsGPT
               </h1>
               <p className="text-muted-foreground mt-2">
-                Connect with like-minded professionals
+                Connect with like-minded people - Your Peeps!
               </p>
             </div>
             <div className="flex gap-2">
@@ -453,9 +453,10 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="relative">
+          <h2 className="text-xl items-center font-bold">Who do you want to connect with?</h2>
           <Input
             className="w-full pl-10 pr-4 py-2"
-            placeholder="Who do you want to connect with?"
+            placeholder="Message PeepsGPT"
           />
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-muted-foreground" />

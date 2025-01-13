@@ -1,36 +1,43 @@
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar } from "@/components/ui/avatar";
-import { User } from "@db/schema";
+import { User, Message } from "@db/schema";
 
-interface ConversationSidebarProps {
-  onSelectUser: (user: User) => void;
-  selectedUser: User | null;
+interface ConversationUser extends User {
+  lastMessage: Message;
 }
 
-export function ConversationSidebar({ onSelectUser, selectedUser }: ConversationSidebarProps) {
-  const { data: users } = useQuery<User[]>({
-    queryKey: ["/api/users"],
+interface ConversationSidebarProps {
+  onSelectUser?: (user: User) => void;
+  selectedUser?: User | null;
+}
+
+export default function ConversationSidebar({ onSelectUser, selectedUser }: ConversationSidebarProps) {
+  const { data: conversations } = useQuery<ConversationUser[]>({
+    queryKey: ["/api/conversations"],
   });
 
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-2">
-        {users?.map((user) => (
+        {conversations?.map((conversation) => (
           <button
-            key={user.id}
-            onClick={() => onSelectUser(user)}
+            key={conversation.id}
+            onClick={() => onSelectUser?.(conversation)}
             className={`w-full flex items-center space-x-4 p-3 rounded-lg hover:bg-accent transition-colors ${
-              selectedUser?.id === user.id ? "bg-accent" : ""
+              selectedUser?.id === conversation.id ? "bg-accent" : ""
             }`}
           >
             <Avatar>
-              <img src={user.photoUrl} alt={user.name} />
+              <img src={conversation.photoUrl} alt={conversation.name} />
             </Avatar>
             <div className="flex-1 text-left">
-              <p className="font-medium">{user.name}</p>
+              <p className="font-medium">{conversation.name}</p>
               <p className="text-sm text-muted-foreground truncate">
-                {user.location}
+                {conversation.lastMessage.content}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(conversation.lastMessage.createdAt).toLocaleTimeString()}
               </p>
             </div>
           </button>

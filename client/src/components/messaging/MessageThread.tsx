@@ -10,10 +10,11 @@ interface MessageThreadProps {
   user: User;
 }
 
-export function MessageThread({ user }: MessageThreadProps) {
+export default function MessageThread({ user }: MessageThreadProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { data: messages } = useQuery<Message[]>({
     queryKey: [`/api/messages/${user.id}`],
+    refetchInterval: 3000, // Poll every 3 seconds for new messages
   });
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export function MessageThread({ user }: MessageThreadProps) {
         </div>
       </ScrollArea>
 
-      <div className="flex-none p-4">
+      <div className="flex-none p-4 border-t">
         <MessageInput receiverId={user.id} />
       </div>
     </div>

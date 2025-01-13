@@ -22,6 +22,7 @@ import type { User, Gender } from "@db/schema";
 
 interface UserWithMatch extends User {
   matchPercentage?: number;
+  isCurrentUser?: boolean;
 }
 
 function App() {

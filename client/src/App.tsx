@@ -1,4 +1,11 @@
 import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Sun, Moon, MapPin, Calendar, User2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -47,6 +54,56 @@ function App() {
 
   const demoUser: User = {
     id: 0,
+
+function LoginForm({ onLogin, onSuccess }: { onLogin: any, onSuccess: () => void }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
+  return (
+    <form 
+      onSubmit={handleSubmit(async (data) => {
+        try {
+          await onLogin(data);
+          onSuccess();
+        } catch (error) {
+          console.error(error);
+        }
+      })}
+      className="space-y-4"
+    >
+      <div>
+        <Input
+          placeholder="Username"
+          {...register("username", { required: "Username is required" })}
+        />
+        {errors.username && (
+          <p className="text-sm text-red-500 mt-1">
+            {errors.username.message as string}
+          </p>
+        )}
+      </div>
+      <div>
+        <Input
+          type="password"
+          placeholder="Password"
+          {...register("password", { required: "Password is required" })}
+        />
+        {errors.password && (
+          <p className="text-sm text-red-500 mt-1">
+            {errors.password.message as string}
+          </p>
+        )}
+      </div>
+      <Button type="submit" className="w-full">
+        Login
+      </Button>
+    </form>
+  );
+}
+
     username: "demo_user",
     name: "Demo User",
     email: "demo@example.com",
@@ -233,12 +290,40 @@ function App() {
                 <HelpCircle className="h-4 w-4 mr-2" />
                 Tutorial
               </Button>
-              <Button 
-                variant="default"
-                onClick={() => setShowAuthForm(true)}
-              >
-                {isLoggedIn ? 'Profile' : 'Login / Sign Up'}
-              </Button>
+              {isLoggedIn ? (
+                <Button 
+                  variant="default"
+                  onClick={() => setShowAuthForm(true)}
+                >
+                  Profile
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="default">Login</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Login</DialogTitle>
+                      </DialogHeader>
+                      <LoginForm 
+                        onLogin={loginMutation.mutate}
+                        onSuccess={() => {
+                          setIsLoggedIn(true);
+                          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                        }}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowAuthForm(true)}
+                  >
+                    Sign Up
+                  </Button>
+                </div>
+              )}
             </div>
           </header>
 

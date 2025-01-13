@@ -839,13 +839,13 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
   );
 }
 
-interface UserProfileProps {
+type UserProfileProps = {
   user: UserWithMatch;
   onClose: () => void;
   isCurrentUser?: boolean;
   onUpdateProfile?: (data: any) => void;
   setIsLoggedIn: (value: boolean) => void;
-}
+};
 
 function UserProfile({
   user,

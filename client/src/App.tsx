@@ -211,7 +211,7 @@ function App() {
               {isLoggedIn ? (
                 <Button 
                   variant="default"
-                  onClick={() => setSelectedUser(currentUser || null)}
+                  onClick={() => setSelectedUser({...currentUser, isCurrentUser: true} as UserWithMatch)}
                 >
                   <Avatar className="h-6 w-6">
                     <img src={currentUser?.photoUrl} alt={currentUser?.name} />
@@ -228,51 +228,13 @@ function App() {
             </div>
           </header>
 
-          <div className="grid gap-8 md:grid-cols-[350px,1fr]">
-            <aside>
-              <Card className="profile-section sticky top-8">
-                <div className="profile-header">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
-                </div>
-                <CardContent className="form-section -mt-16 relative">
-                  {isLoggedIn && currentUser ? (
-                    <ProfileForm
-                      user={currentUser}
-                      onSubmit={updateProfileMutation.mutate}
-                    />
-                  ) : (
-                    <ProfileForm
-                      user={{
-                        id: 0,
-                        username: "demo_user",
-                        name: "Demo User",
-                        email: "demo@example.com",
-                        age: 25,
-                        gender: "Other",
-                        location: "New York, United States",
-                        latitude: "40.7128",
-                        longitude: "-74.0060",
-                        photoUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=demo",
-                        publicDescription: "This is a demo profile.\nLog in or sign up to see real matches!",
-                        privateDescription: "",
-                        socialIds: "",
-                        newsletterEnabled: false,
-                        updatedAt: new Date().toISOString(),
-                        password: ""
-                      }}
-                      onSubmit={() => setShowAuthForm(true)}
-                      isDemo={true}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </aside>
-
-            <main>
+          <main className="container mx-auto">
               {selectedUser ? (
                 <UserProfile
                   user={selectedUser}
                   onClose={() => setSelectedUser(null)}
+                  isCurrentUser={'isCurrentUser' in selectedUser}
+                  onUpdateProfile={updateProfileMutation.mutate}
                 />
               ) : (
                 <div className="matches-section space-y-6">
@@ -825,9 +787,13 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
 function UserProfile({
   user,
   onClose,
+  isCurrentUser,
+  onUpdateProfile,
 }: {
   user: UserWithMatch;
   onClose: () => void;
+  isCurrentUser?: boolean;
+  onUpdateProfile?: (data: any) => void;
 }) {
   return (
     <Card className="overflow-hidden">
@@ -856,7 +822,7 @@ function UserProfile({
               <p className="text-muted-foreground">
                 {user.age} • {user.gender} • {user.location}
               </p>
-              {user.matchPercentage && (
+              {!isCurrentUser && user.matchPercentage && (
                 <span className="inline-block px-2 py-1 text-sm font-semibold rounded-full bg-primary/10 text-primary mt-2">
                   {user.matchPercentage}% Match
                 </span>
@@ -868,7 +834,10 @@ function UserProfile({
           </Button>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2">
+        {isCurrentUser ? (
+          <ProfileForm user={user} onSubmit={onUpdateProfile} />
+        ) : (
+          <div className="grid gap-8 md:grid-cols-2">
           <div>
             <h3 className="text-lg font-semibold mb-4">About</h3>
             <div className="space-y-4">
@@ -903,6 +872,7 @@ function UserProfile({
             </div>
           </div>
         </div>
+        )}
       </CardContent>
     </Card>
   );

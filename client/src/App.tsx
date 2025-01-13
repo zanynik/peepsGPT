@@ -244,8 +244,7 @@ function App() {
                   />
                 </div>
               )}
-            </main>
-          </div>
+          </main>
         </div>
       </div>
 

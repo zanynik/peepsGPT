@@ -35,6 +35,7 @@ function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithMatch | null>(null);
+  const [showAuthForm, setShowAuthForm] = useState(false);
   const [runTutorial, setRunTutorial] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -43,6 +44,25 @@ function App() {
     queryKey: ["/api/user"],
     enabled: isLoggedIn,
   });
+
+  const demoUser: User = {
+    id: 0,
+    username: "demo_user",
+    name: "Demo User",
+    email: "demo@example.com",
+    age: 25,
+    gender: "Other",
+    location: "New York, United States",
+    latitude: "40.7128",
+    longitude: "-74.0060",
+    photoUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=demo",
+    publicDescription: "This is a demo profile.\nLog in or sign up to see real matches!",
+    privateDescription: "",
+    socialIds: "",
+    newsletterEnabled: false,
+    updatedAt: new Date().toISOString(),
+    password: ""
+  };
 
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
@@ -145,16 +165,17 @@ function App() {
     },
   });
 
-  if (!isLoggedIn) {
+  if (showAuthForm) {
     return (
       <AuthForm
         onLogin={loginMutation.mutate}
         onRegister={registerMutation.mutate}
+        onClose={() => setShowAuthForm(false)}
       />
     );
   }
 
-  if (userLoading) {
+  if (isLoggedIn && userLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -212,25 +233,37 @@ function App() {
                 <HelpCircle className="h-4 w-4 mr-2" />
                 Tutorial
               </Button>
+              <Button 
+                variant="default"
+                onClick={() => setShowAuthForm(true)}
+              >
+                {isLoggedIn ? 'Profile' : 'Login / Sign Up'}
+              </Button>
             </div>
           </header>
 
           <div className="grid gap-8 md:grid-cols-[350px,1fr]">
-            {currentUser && (
-              <aside>
-                <Card className="profile-section sticky top-8">
-                  <div className="profile-header">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
-                  </div>
-                  <CardContent className="form-section -mt-16 relative">
+            <aside>
+              <Card className="profile-section sticky top-8">
+                <div className="profile-header">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
+                </div>
+                <CardContent className="form-section -mt-16 relative">
+                  {isLoggedIn && currentUser ? (
                     <ProfileForm
                       user={currentUser}
                       onSubmit={updateProfileMutation.mutate}
                     />
-                  </CardContent>
-                </Card>
-              </aside>
-            )}
+                  ) : (
+                    <ProfileForm
+                      user={demoUser}
+                      onSubmit={() => setShowAuthForm(true)}
+                      isDemo={true}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </aside>
 
             <main>
               {selectedUser ? (

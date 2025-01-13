@@ -154,10 +154,12 @@ function App() {
     },
   });
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
     setIsLoggedIn(false);
     sessionStorage.removeItem('isLoggedIn');
     setSelectedUser(null); // Return to home screen
+    queryClient.clear(); // Clear React Query cache
   };
 
   if (isLoggedIn && userLoading) {

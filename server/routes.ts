@@ -219,6 +219,10 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.get("/api/user", async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
     }

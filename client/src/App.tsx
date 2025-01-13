@@ -17,6 +17,9 @@ import { Avatar } from "@/components/ui/avatar";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Filter } from "lucide-react";
+import { Switch, Route } from "wouter";
+import { AlertCircle } from "lucide-react";
+import { MessagingLayout } from "@/components/messaging/MessagingLayout";
 
 // Define Gender type
 type Gender = "Male" | "Female" | "Other";
@@ -154,101 +157,127 @@ function App() {
     );
   }
 
-  return (
-    <>
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-4 max-w-5xl">
-          <header className="flex justify-between items-center mb-6 border-b pb-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-primary">
-                PeepsGPT
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Connect with like-minded people - Your Peeps!
-              </p>
+  // fallback 404 not found page
+  function NotFound() {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <div className="flex mb-4 gap-2">
+              <AlertCircle className="h-8 w-8 text-red-500" />
+              <h1 className="text-2xl font-bold text-gray-900">404 Page Not Found</h1>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  document.documentElement.classList.toggle('dark');
-                  localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-                }}
-              >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-              {isLoggedIn ? (
-                <Button 
-                  variant="default"
-                  onClick={() => setSelectedUser({...currentUser, isCurrentUser: true} as UserWithMatch)}
-                >
-                  <Avatar className="h-6 w-6">
-                    <img src={currentUser?.photoUrl} alt={currentUser?.name} />
-                  </Avatar>
-                </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button 
-                    variant="default"
-                    onClick={() => setShowAuthForm('login')}
-                  >
-                    Login
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => setShowAuthForm('register')}
-                  >
-                    Sign Up
-                  </Button>
-                </div>
-              )}
-            </div>
-          </header>
 
-          <main className="container mx-auto">
-            {selectedUser ? (
-              <UserProfile
-                user={selectedUser}
-                onClose={() => setSelectedUser(null)}
-                isCurrentUser={'isCurrentUser' in selectedUser}
-                onUpdateProfile={updateProfileMutation.mutate}
-                setIsLoggedIn={handleLogout}
-              />
-            ) : (
-              <div className="matches-section space-y-6">
-                <UserList 
-                  onSelect={setSelectedUser} 
-                  users={users}
-                  isLoggedIn={isLoggedIn}
-                />
-              </div>
-            )}
-          </main>
-        </div>
+            <p className="mt-4 text-sm text-gray-600">
+              Did you forget to add the page to the router?
+            </p>
+          </CardContent>
+        </Card>
       </div>
+    );
+  }
 
-      {showAuthForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <Card className="w-full max-w-md">
-            <CardContent className="p-6">
-              <h1 className="text-2xl font-bold mb-4">
-                {showAuthForm === 'login' ? "Login" : "Register"}
-              </h1>
-              <AuthForm
-                onLogin={loginMutation.mutate}
-                onRegister={registerMutation.mutate}
-                onClose={() => setShowAuthForm(false)}
-                isLogin={showAuthForm === 'login'}
-                setShowAuthForm={setShowAuthForm}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </>
+
+  return (
+    <Switch>
+      <Route path="/messages" component={MessagingLayout} />
+      <Route path="/">
+        <>
+          <div className="min-h-screen bg-background">
+            <div className="container mx-auto px-4 py-4 max-w-5xl">
+              <header className="flex justify-between items-center mb-6 border-b pb-4">
+                <div>
+                  <h1 className="text-2xl font-semibold text-primary">
+                    PeepsGPT
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Connect with like-minded people - Your Peeps!
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      document.documentElement.classList.toggle('dark');
+                      localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+                    }}
+                  >
+                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+                    <span className="sr-only">Toggle theme</span>
+                  </Button>
+                  {isLoggedIn ? (
+                    <Button
+                      variant="default"
+                      onClick={() => setSelectedUser({...currentUser, isCurrentUser: true} as UserWithMatch)}
+                    >
+                      <Avatar className="h-6 w-6">
+                        <img src={currentUser?.photoUrl} alt={currentUser?.name} />
+                      </Avatar>
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="default"
+                        onClick={() => setShowAuthForm('login')}
+                      >
+                        Login
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAuthForm('register')}
+                      >
+                        Sign Up
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </header>
+
+              <main className="container mx-auto">
+                {selectedUser ? (
+                  <UserProfile
+                    user={selectedUser}
+                    onClose={() => setSelectedUser(null)}
+                    isCurrentUser={'isCurrentUser' in selectedUser}
+                    onUpdateProfile={updateProfileMutation.mutate}
+                    setIsLoggedIn={handleLogout}
+                  />
+                ) : (
+                  <div className="matches-section space-y-6">
+                    <UserList
+                      onSelect={setSelectedUser}
+                      users={users}
+                      isLoggedIn={isLoggedIn}
+                    />
+                  </div>
+                )}
+              </main>
+            </div>
+          </div>
+
+          {showAuthForm && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+              <Card className="w-full max-w-md">
+                <CardContent className="p-6">
+                  <h1 className="text-2xl font-bold mb-4">
+                    {showAuthForm === 'login' ? "Login" : "Register"}
+                  </h1>
+                  <AuthForm
+                    onLogin={loginMutation.mutate}
+                    onRegister={registerMutation.mutate}
+                    onClose={() => setShowAuthForm(false)}
+                    isLogin={showAuthForm === 'login'}
+                    setShowAuthForm={setShowAuthForm}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </>
+      </Route>
+    </Switch>
   );
 }
 
@@ -344,7 +373,7 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
             <Input
               type="number"
               placeholder="Age"
-              {...register("age", { 
+              {...register("age", {
                 required: "Age is required",
                 min: { value: 18, message: "Must be 18 or older" }
               })}
@@ -367,7 +396,7 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
             )}
           </div>
           <div>
-            <Select 
+            <Select
               onValueChange={(value) => setValue("gender", value)}
             >
               <SelectTrigger>
@@ -412,11 +441,11 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
   );
 }
 
-function UserList({ 
-  onSelect, 
+function UserList({
+  onSelect,
   users,
-  isLoggedIn 
-}: { 
+  isLoggedIn
+}: {
   onSelect: (user: UserWithMatch) => void;
   users: UserWithMatch[];
   isLoggedIn: boolean;
@@ -843,7 +872,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: (data: User) =>
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Gender</label>
-          <Select 
+          <Select
             defaultValue={user.gender}
             onValueChange={(value) => setValue("gender", value)}
           >

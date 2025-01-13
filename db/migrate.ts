@@ -7,8 +7,13 @@ import { sql } from "drizzle-orm";
 async function runMigration() {
   console.log("Running migration...");
   
-  // Enable pgvector extension
+  // Drop and recreate vector extension
+  await db.execute(sql`DROP EXTENSION IF EXISTS vector;`);
   await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector;`);
+  
+  // Drop and recreate tables to ensure clean state
+  await db.execute(sql`DROP TABLE IF EXISTS matches;`);
+  await db.execute(sql`DROP TABLE IF EXISTS users;`);
   
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS users (

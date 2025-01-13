@@ -58,11 +58,22 @@ function App() {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     }
-    // Check if user was previously logged in
-    const wasLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-    if (wasLoggedIn) {
-      setIsLoggedIn(true);
-    }
+
+    // Check actual session status from server
+    fetch('/api/user')
+      .then(res => {
+        if (res.ok) {
+          setIsLoggedIn(true);
+          return res.json();
+        }
+        // If not logged in, clear session storage
+        sessionStorage.removeItem('isLoggedIn');
+        setIsLoggedIn(false);
+        throw new Error('Not authenticated');
+      })
+      .catch(() => {
+        setIsLoggedIn(false);
+      });
   }, []);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);

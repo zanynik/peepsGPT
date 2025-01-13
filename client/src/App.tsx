@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sun, Moon, MapPin, Calendar, User2, Mail } from "lucide-react";
+import { Sun, Moon, MapPin, Calendar, User2, Mail, Search } from "lucide-react";
 import { useForm } from "react-hook-form";
 import {
   Select,
@@ -223,6 +223,7 @@ function App() {
                   onClose={() => setSelectedUser(null)}
                   isCurrentUser={'isCurrentUser' in selectedUser}
                   onUpdateProfile={updateProfileMutation.mutate}
+                  setIsLoggedIn={setIsLoggedIn}
                 />
               ) : (
                 <div className="matches-section space-y-6">
@@ -658,8 +659,18 @@ function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Suggested Matches</h2>
+      <div className="space-y-4">
+        <div className="relative">
+          <Input
+            className="w-full pl-10 pr-4 py-2"
+            placeholder="Who do you want to connect with?"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Suggested Matches</h2>
         {!users && (
           <Button
             variant="outline"
@@ -832,11 +843,13 @@ function UserProfile({
   onClose,
   isCurrentUser,
   onUpdateProfile,
+  setIsLoggedIn,
 }: {
   user: UserWithMatch;
   onClose: () => void;
   isCurrentUser?: boolean;
   onUpdateProfile?: (data: any) => void;
+  setIsLoggedIn: (value: boolean) => void;
 }) {
   return (
     <Card className="overflow-hidden">

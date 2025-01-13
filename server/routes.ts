@@ -331,7 +331,9 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put("/api/profile", async (req, res) => {
+  import { updateUserEmbedding } from './services/embeddings';
+
+app.put("/api/profile", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
     }
@@ -369,6 +371,15 @@ export function registerRoutes(app: Express): Server {
         .where(eq(users.id, req.session.userId))
         .returning();
 
+      // Update embedding if description changed
+      if (profile.publicDescription || profile.privateDescription) {
+        await updateUserEmbedding(
+          user.id, 
+          profile.publicDescription || user.publicDescription,
+          profile.privateDescription || user.privateDescription
+        );
+      }
+      
       res.json(user);
     } catch (error: any) {
       console.error("Update profile error:", error);

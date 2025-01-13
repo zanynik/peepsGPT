@@ -6,6 +6,10 @@ import { sql } from "drizzle-orm";
 
 async function runMigration() {
   console.log("Running migration...");
+  
+  // Enable pgvector extension
+  await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector;`);
+  
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -23,7 +27,8 @@ async function runMigration() {
       social_ids TEXT NOT NULL,
       photo_url TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-      newsletter_enabled BOOLEAN DEFAULT TRUE NOT NULL
+      newsletter_enabled BOOLEAN DEFAULT TRUE NOT NULL,
+      embedding vector(1536)
     );
 
     CREATE TABLE IF NOT EXISTS matches (

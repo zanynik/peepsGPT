@@ -260,6 +260,7 @@ function App() {
                 onRegister={registerMutation.mutate}
                 onClose={() => setShowAuthForm(false)}
                 isLogin={showAuthForm === 'login'}
+                setShowAuthForm={setShowAuthForm}
               />
             </CardContent>
           </Card>
@@ -274,9 +275,10 @@ interface AuthFormProps {
   onRegister: (data: any) => void;
   onClose: () => void;
   isLogin: boolean;
+  setShowAuthForm: (value: 'login' | 'register' | false) => void;
 }
 
-function AuthForm({ onLogin, onRegister, onClose, isLogin }: AuthFormProps) {
+function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: AuthFormProps) {
   const {
     register,
     handleSubmit,

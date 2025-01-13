@@ -17,21 +17,38 @@ import { Avatar } from "@/components/ui/avatar";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, HelpCircle, Filter } from "lucide-react";
-import Joyride, { Step, CallBackProps, STATUS } from "react-joyride";
-import type { User, Gender } from "@db/schema";
+
+// Define Gender type
+type Gender = "Male" | "Female" | "Other";
+
+// Define User type since it's not being imported correctly
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  age: number;
+  gender: Gender;
+  location: string;
+  photoUrl: string;
+  publicDescription?: string;
+  privateDescription?: string;
+  socialIds?: string;
+}
 
 type UserWithMatch = User & {
   matchPercentage?: number;
   isCurrentUser?: boolean;
 };
 
-type UserProfileProps = {
+interface UserProfileProps {
   user: UserWithMatch;
   onClose: () => void;
   isCurrentUser?: boolean;
-  onUpdateProfile?: (data: any) => void;
+  onUpdateProfile?: (data: User) => void;
   setIsLoggedIn: (value: boolean) => void;
-};
+}
+
+type AuthFormType = 'login' | 'register' | false;
 
 function App() {
   useEffect(() => {
@@ -43,8 +60,7 @@ function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithMatch | null>(null);
-  const [showAuthForm, setShowAuthForm] = useState(false);
-  const [runTutorial, setRunTutorial] = useState(false);
+  const [showAuthForm, setShowAuthForm] = useState<AuthFormType>(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -61,46 +77,10 @@ function App() {
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
     if (isLoggedIn && !hasSeenTutorial) {
-      setRunTutorial(true);
+      //setRunTutorial(true);  // Removed tutorial logic
     }
   }, [isLoggedIn]);
 
-  const tutorialSteps: Step[] = [
-    {
-      target: ".profile-section",
-      content:
-        "Welcome to the matching platform! This is your profile section where you can edit your details and preferences.",
-      disableBeacon: true,
-    },
-    {
-      target: ".photo-upload",
-      content:
-        "Add a photo to make your profile more appealing. You can upload an image or provide a URL.",
-    },
-    {
-      target: ".matches-section",
-      content:
-        "Here you can see your potential matches, sorted by compatibility percentage.",
-    },
-    {
-      target: ".match-card",
-      content:
-        "Click on any profile card to view detailed information about that person.",
-    },
-    {
-      target: ".social-info",
-      content:
-        "Add your social media handles to let others connect with you on different platforms.",
-    },
-  ];
-
-  const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status } = data;
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
-      localStorage.setItem("hasSeenTutorial", "true");
-      setRunTutorial(false);
-    }
-  };
 
   const loginMutation = useMutation({
     mutationFn: async (data: { username: string; password: string }) => {
@@ -142,7 +122,7 @@ function App() {
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: User) => {
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -170,8 +150,6 @@ function App() {
 
   return (
     <>
-      {/*Removed Joyride component as per user request*/}
-
       <div className="min-h-screen bg-gradient-to-br from-background to-muted">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           <header className="flex justify-between items-center mb-8">
@@ -196,7 +174,6 @@ function App() {
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
                 <span className="sr-only">Toggle theme</span>
               </Button>
-              {/*Removed Tutorial button as per user request*/}
               {isLoggedIn ? (
                 <Button 
                   variant="default"
@@ -269,17 +246,18 @@ function App() {
 }
 
 interface AuthFormProps {
-  onLogin: (data: any) => void;
-  onRegister: (data: any) => void;
+  onLogin: (data: { username: string; password: string }) => void;
+  onRegister: (data: Omit<User, 'id'>) => void;
   onClose: () => void;
   isLogin: boolean;
-  setShowAuthForm: (value: 'login' | 'register' | false) => void;
+  setShowAuthForm: (value: AuthFormType) => void;
 }
 
 function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: AuthFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm();
 
@@ -427,7 +405,327 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
   );
 }
 
-function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: any; isDemo?: boolean }) {
+function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void; users?: UserWithMatch[] }) {
+  const [filters, setFilters] = useState({
+    minAge: "18",
+    maxAge: "75",
+    gender: "all",
+    maxDistance: "0",
+  });
+
+  const { data: loggedInUsers = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
+    queryKey: ["/api/users", filters],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/users?minAge=${filters.minAge}&maxAge=${filters.maxAge}&gender=${filters.gender}&maxDistance=${filters.maxDistance}`
+      );
+      if (!res.ok) throw new Error("Failed to fetch users");
+      return res.json();
+    },
+    enabled: !users,
+  });
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [tempFilters, setTempFilters] = useState({
+    ...filters,
+    anyDistance: filters.maxDistance === "0",
+  });
+
+  const handleApplyFilters = () => {
+    setFilters({
+      ...tempFilters,
+      maxDistance: tempFilters.anyDistance ? "0" : tempFilters.maxDistance,
+    });
+    setShowFilters(false);
+  };
+
+  if (usersLoading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  const displayUsers = users || loggedInUsers;
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="relative">
+          <Input
+            className="w-full pl-10 pr-4 py-2"
+            placeholder="Who do you want to connect with?"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Suggested Matches</h2>
+          {!users && (
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4" />
+              <span>Filters</span>
+              {Object.values(filters).some((v) => v !== "all" && v !== "0") && (
+                <span className="ml-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  •
+                </span>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {showFilters && (
+        <Card>
+          <CardContent className="p-6 space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold">Filter Matches</h3>
+              <Button onClick={handleApplyFilters}>Apply</Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Age Range</label>
+                <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                  <span>{tempFilters.minAge}</span>
+                  <span>{tempFilters.maxAge}</span>
+                </div>
+                <Slider
+                  min={18}
+                  max={100}
+                  step={1}
+                  value={[
+                    parseInt(tempFilters.minAge),
+                    parseInt(tempFilters.maxAge),
+                  ]}
+                  onValueChange={([min, max]) =>
+                    setTempFilters({
+                      ...tempFilters,
+                      minAge: min.toString(),
+                      maxAge: max.toString(),
+                    })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={tempFilters.anyDistance}
+                    onChange={(e) =>
+                      setTempFilters({
+                        ...tempFilters,
+                        anyDistance: e.target.checked,
+                        maxDistance: e.target.checked
+                          ? "0"
+                          : tempFilters.maxDistance,
+                      })
+                    }
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  <label className="text-sm font-medium">Any distance</label>
+                </div>
+
+                {!tempFilters.anyDistance && (
+                  <>
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Max Distance</span>
+                      <span>{tempFilters.maxDistance} km</span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={1000}
+                      step={10}
+                      value={[parseInt(tempFilters.maxDistance)]}
+                      onValueChange={([value]) =>
+                        setTempFilters({
+                          ...tempFilters,
+                          maxDistance: value.toString(),
+                        })
+                      }
+                    />
+                  </>
+                )}
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Gender</label>
+                <Select
+                  value={tempFilters.gender}
+                  onValueChange={(value) =>
+                    setTempFilters({ ...tempFilters, gender: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any</SelectItem>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {displayUsers.map((user) => (
+          <Card
+            key={user.id}
+            className="group cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden"
+            onClick={() => onSelect(user)}
+          >
+            <div className="aspect-video relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
+              {user.photoUrl && (
+                <img
+                  src={user.photoUrl}
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg">{user.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {user.age} • {user.gender}
+                    </p>
+                  </div>
+                  {!users && user.matchPercentage && (
+                    <div className="text-right">
+                      <span className="inline-block px-2 py-1 text-sm font-semibold rounded-full bg-primary/10 text-primary">
+                        {user.matchPercentage}% Match
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  {user.location}
+                </div>
+                {user.publicDescription && (
+                  <p className="text-sm line-clamp-2">
+                    {user.publicDescription.split("\n")[0]}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function UserProfile({ user, onClose, isCurrentUser, onUpdateProfile, setIsLoggedIn }: UserProfileProps) {
+  return (
+    <Card className="overflow-hidden">
+      <div className="profile-header relative aspect-[3/1]">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
+        {user.photoUrl && (
+          <img
+            src={user.photoUrl}
+            alt={user.name}
+            className="w-full h-full object-cover"
+          />
+        )}
+      </div>
+      <CardContent className="form-section -mt-16 relative">
+        <div className="flex justify-between items-start mb-8">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-24 w-24 ring-4 ring-background">
+              <img
+                src={user.photoUrl}
+                alt={user.name}
+                className="object-cover"
+              />
+            </Avatar>
+            <div>
+              <h2 className="text-2xl font-bold">{user.name}</h2>
+              <p className="text-muted-foreground">
+                {user.age} • {user.gender} • {user.location}
+              </p>
+              {!isCurrentUser && user.matchPercentage && (
+                <span className="inline-block px-2 py-1 text-sm font-semibold rounded-full bg-primary/10 text-primary mt-2">
+                  {user.matchPercentage}% Match
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+            {isCurrentUser && (
+              <Button variant="outline" onClick={() => {
+                setIsLoggedIn(false);
+                sessionStorage.removeItem('isLoggedIn');
+              }}>
+                Logout
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {isCurrentUser ? (
+          <ProfileForm user={user} onSubmit={onUpdateProfile} />
+        ) : (
+          <div className="grid gap-8 md:grid-cols-2">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">About</h3>
+              <div className="space-y-4">
+                {user.publicDescription?.split("\n").map((note, i) => (
+                  <div
+                    key={i}
+                    className="p-4 rounded-lg bg-muted/50"
+                  >
+                    {note}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Contact</h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  <a
+                    href={`mailto:${user.email}`}
+                    className="text-primary hover:underline"
+                  >
+                    {user.email}
+                  </a>
+                </div>
+                {user.socialIds && (
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <h4 className="font-medium mb-2">Social Media</h4>
+                    <p>{user.socialIds}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: (data: User) => void; isDemo?: boolean }) {
   const {
     register,
     handleSubmit,
@@ -619,334 +917,6 @@ function ProfileForm({ user, onSubmit, isDemo }: { user: User; onSubmit: any; is
         </div>
       )}
     </form>
-  );
-}
-
-function UserList({ onSelect, users }: { onSelect: (user: UserWithMatch) => void, users?: UserWithMatch[] }) {
-  const [filters, setFilters] = useState({
-    minAge: "18",
-    maxAge: "75",
-    gender: "all",
-    maxDistance: "0",
-  });
-
-  const { data: loggedInUsers = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
-    queryKey: ["/api/users", filters],
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/users?minAge=${filters.minAge}&maxAge=${filters.maxAge}&gender=${filters.gender}&maxDistance=${filters.maxDistance}`
-      );
-      if (!res.ok) throw new Error("Failed to fetch users");
-      return res.json();
-    },
-    enabled: !users,
-  });
-
-  const [showFilters, setShowFilters] = useState(false);
-  const [tempFilters, setTempFilters] = useState({
-    ...filters,
-    anyDistance: filters.maxDistance === "0",
-  });
-
-  const handleApplyFilters = () => {
-    setFilters({
-      ...tempFilters,
-      maxDistance: tempFilters.anyDistance ? "0" : tempFilters.maxDistance,
-    });
-    setShowFilters(false);
-  };
-
-  if (usersLoading) {
-    return (
-      <div className="flex items-center justify-center h-40">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  const displayUsers = users || loggedInUsers;
-
-  return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="relative">
-          <Input
-            className="w-full pl-10 pr-4 py-2"
-            placeholder="Who do you want to connect with?"
-          />
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Suggested Matches</h2>
-        {!users && (
-          <Button
-            variant="outline"
-            className="flex items-center gap-2"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4" />
-            <span>Filters</span>
-            {Object.values(filters).some((v) => v !== "all" && v !== "0") && (
-              <span className="ml-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                •
-              </span>
-            )}
-          </Button>
-        )}
-      </div>
-
-      {showFilters && (
-        <Card>
-          <CardContent className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="font-semibold">Filter Matches</h3>
-              <Button onClick={handleApplyFilters}>Apply</Button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Age Range</label>
-                <div className="flex justify-between text-sm text-muted-foreground mb-2">
-                  <span>{tempFilters.minAge}</span>
-                  <span>{tempFilters.maxAge}</span>
-                </div>
-                <Slider
-                  min={18}
-                  max={100}
-                  step={1}
-                  value={[
-                    parseInt(tempFilters.minAge),
-                    parseInt(tempFilters.maxAge),
-                  ]}
-                  onValueChange={([min, max]) =>
-                    setTempFilters({
-                      ...tempFilters,
-                      minAge: min.toString(),
-                      maxAge: max.toString(),
-                    })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={tempFilters.anyDistance}
-                    onChange={(e) =>
-                      setTempFilters({
-                        ...tempFilters,
-                        anyDistance: e.target.checked,
-                        maxDistance: e.target.checked
-                          ? "0"
-                          : tempFilters.maxDistance,
-                      })
-                    }
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  <label className="text-sm font-medium">Any distance</label>
-                </div>
-
-                {!tempFilters.anyDistance && (
-                  <>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Max Distance</span>
-                      <span>{tempFilters.maxDistance} km</span>
-                    </div>
-                    <Slider
-                      min={0}
-                      max={1000}
-                      step={10}
-                      value={[parseInt(tempFilters.maxDistance)]}
-                      onValueChange={([value]) =>
-                        setTempFilters({
-                          ...tempFilters,
-                          maxDistance: value.toString(),
-                        })
-                      }
-                    />
-                  </>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Gender</label>
-                <Select
-                  value={tempFilters.gender}
-                  onValueChange={(value) =>
-                    setTempFilters({ ...tempFilters, gender: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Any</SelectItem>
-                    <SelectItem value="Male">Male</SelectItem>
-                    <SelectItem value="Female">Female</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {displayUsers.map((user) => (
-          <Card
-            key={user.id}
-            className="group cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden"
-            onClick={() => onSelect(user)}
-          >
-            <div className="aspect-video relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
-              {user.photoUrl && (
-                <img
-                  src={user.photoUrl}
-                  alt={user.name}
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </div>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg">{user.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {user.age} • {user.gender}
-                    </p>
-                  </div>
-                  {!users && user.matchPercentage && (
-                    <div className="text-right">
-                      <span className="inline-block px-2 py-1 text-sm font-semibold rounded-full bg-primary/10 text-primary">
-                        {user.matchPercentage}% Match
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  {user.location}
-                </div>
-                {user.publicDescription && (
-                  <p className="text-sm line-clamp-2">
-                    {user.publicDescription.split("\n")[0]}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-type UserProfileProps = {
-  user: UserWithMatch;
-  onClose: () => void;
-  isCurrentUser?: boolean;
-  onUpdateProfile?: (data: any) => void;
-  setIsLoggedIn: (value: boolean) => void;
-};
-
-function UserProfile(props: UserProfileProps) {
-  const { user, onClose, isCurrentUser, onUpdateProfile, setIsLoggedIn } = props;
-  return (
-    <Card className="overflow-hidden">
-      <div className="profile-header">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
-        {user.photoUrl && (
-          <img
-            src={user.photoUrl}
-            alt={user.name}
-            className="w-full h-full object-cover"
-          />
-        )}
-      </div>
-      <CardContent className="form-section -mt-16 relative">
-        <div className="flex justify-between items-start mb-8">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-24 w-24 ring-4 ring-background">
-              <img
-                src={user.photoUrl}
-                alt={user.name}
-                className="object-cover"
-              />
-            </Avatar>
-            <div>
-              <h2 className="text-2xl font-bold">{user.name}</h2>
-              <p className="text-muted-foreground">
-                {user.age} • {user.gender} • {user.location}
-              </p>
-              {!isCurrentUser && user.matchPercentage && (
-                <span className="inline-block px-2 py-1 text-sm font-semibold rounded-full bg-primary/10 text-primary mt-2">
-                  {user.matchPercentage}% Match
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
-            {isCurrentUser && (
-              <Button variant="outline" onClick={() => {
-                setIsLoggedIn(false);
-                sessionStorage.removeItem('isLoggedIn');
-              }}>
-                Logout
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {isCurrentUser ? (
-          <ProfileForm user={user} onSubmit={onUpdateProfile} />
-        ) : (
-          <div className="grid gap-8 md:grid-cols-2">
-          <div>
-            <h3 className="text-lg font-semibold mb-4">About</h3>
-            <div className="space-y-4">
-              {user.publicDescription?.split("\n").map((note, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-lg bg-muted/50"
-                >
-                  {note}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Contact</h3>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                <a
-                  href={`mailto:${user.email}`}
-                  className="text-primary hover:underline"
-                >
-                  {user.email}
-                </a>
-              </div>
-              {user.socialIds && (
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <h4 className="font-medium mb-2">Social Media</h4>
-                  <p>{user.socialIds}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 

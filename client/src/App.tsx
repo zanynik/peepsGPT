@@ -87,9 +87,48 @@ function App() {
     enabled: isLoggedIn,
   });
 
-  // Fetch users regardless of login state
+  // Fetch random profiles when not logged in
+  const getRandomProfiles = () => {
+    const demoProfiles: UserWithMatch[] = [
+      {
+        id: 1,
+        name: "Alex Chen",
+        email: "alex@example.com",
+        age: 29,
+        gender: "Other",
+        location: "Seattle, US",
+        photoUrl: "https://api.dicebear.com/7.x/personas/svg?seed=alex",
+        publicDescription: "Strategic thinker and innovator.",
+      },
+      {
+        id: 2,
+        name: "Maya Patel",
+        email: "maya@example.com",
+        age: 30,
+        gender: "Female",
+        location: "Chicago, US",
+        photoUrl: "https://api.dicebear.com/7.x/personas/svg?seed=maya",
+        publicDescription: "Natural mentor and inspirational leader.",
+      },
+      {
+        id: 3,
+        name: "Sam Wright",
+        email: "sam@example.com",
+        age: 25,
+        gender: "Other",
+        location: "Boston, US",
+        photoUrl: "https://api.dicebear.com/7.x/personas/svg?seed=sam",
+        publicDescription: "Analytical problem-solver.",
+      }
+    ];
+    return demoProfiles.sort(() => Math.random() - 0.5).slice(0, 2);
+  };
+
+  // Fetch users only when logged in
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
     queryKey: ["/api/users"],
+    enabled: isLoggedIn,
+    initialData: !isLoggedIn ? getRandomProfiles() : []
   });
 
   const loginMutation = useMutation({
@@ -200,7 +239,10 @@ function App() {
             <div className="container mx-auto px-4 py-4 max-w-5xl">
               <header className="flex justify-between items-center mb-6 border-b pb-4">
                 <div>
-                  <h1 className="text-2xl font-semibold text-primary">
+                  <h1 
+                    className="text-2xl font-semibold text-primary cursor-pointer" 
+                    onClick={() => setSelectedUser(null)}
+                  >
                     PeepsGPT
                   </h1>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -506,7 +548,9 @@ function UserList({
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Suggested Matches</h2>
+          <h2 className="text-2xl font-bold">
+            {isLoggedIn ? "Suggested Matches" : "Featured Profiles"}
+          </h2>
           {!isLoggedIn && (
             <Button
               variant="outline"

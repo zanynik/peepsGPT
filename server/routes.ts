@@ -11,7 +11,7 @@ import { startNewsletterScheduler } from "./services/newsletter";
 import { validateAndGetLocation, getSuggestions } from "./services/geonames";
 import { z } from "zod";
 import { setupWebSocket } from "./websocket";
-import { updateUserEmbedding } from './services/embeddings';
+import { updateUserEmbedding, generateEmbedding } from './services/embeddings';
 
 declare module "express-session" {
   interface SessionData {

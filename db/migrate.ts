@@ -34,6 +34,7 @@ async function runMigration() {
       social_ids TEXT NOT NULL,
       photo_url TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
       newsletter_enabled BOOLEAN DEFAULT TRUE NOT NULL,
       embedding vector(1536)
     );

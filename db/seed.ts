@@ -243,6 +243,7 @@ async function seed() {
         socialIds: `twitter:@${profile.username}`,
         newsletterEnabled: true,
         createdAt: new Date(),
+        type: profile.type,
       });
     }
     

@@ -1,3 +1,4 @@
+
 import { db } from "./index";
 import { users, matches } from "./schema";
 import { drizzle } from "drizzle-orm/neon-serverless";
@@ -7,14 +8,15 @@ import { sql } from "drizzle-orm";
 async function runMigration() {
   console.log("Running migration...");
   
-  // Drop and recreate vector extension
-  await db.execute(sql`DROP EXTENSION IF EXISTS vector;`);
+  // Drop tables first
+  await db.execute(sql`DROP TABLE IF EXISTS matches CASCADE;`);
+  await db.execute(sql`DROP TABLE IF EXISTS users CASCADE;`);
+  
+  // Now safe to drop and recreate vector extension
+  await db.execute(sql`DROP EXTENSION IF EXISTS vector CASCADE;`);
   await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector;`);
   
-  // Drop and recreate tables to ensure clean state
-  await db.execute(sql`DROP TABLE IF EXISTS matches;`);
-  await db.execute(sql`DROP TABLE IF EXISTS users;`);
-  
+  // Create tables
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,

@@ -242,7 +242,7 @@ async function seed() {
         photoUrl: `https://api.dicebear.com/7.x/personas/svg?seed=${profile.username}`,
         socialIds: `twitter:@${profile.username}`,
         newsletterEnabled: true,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
       });
     }
     

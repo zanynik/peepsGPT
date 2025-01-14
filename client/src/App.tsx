@@ -536,7 +536,7 @@ function UserList({
         </div>
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">
-            {isLoggedIn ? "Suggested Matches" : "Featured Profiles"}
+            {isLoggedIn ? "Suggested Connections" : "Featured Profiles"}
           </h2>
           {!isLoggedIn && (
             <Button

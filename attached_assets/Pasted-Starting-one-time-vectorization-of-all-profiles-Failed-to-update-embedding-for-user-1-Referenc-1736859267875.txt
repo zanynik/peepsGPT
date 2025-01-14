@@ -1,0 +1,53 @@
+Starting one-time vectorization of all profiles...
+✗ Failed to update embedding for user 1: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 2: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 3: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 4: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 5: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 6: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 7: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 8: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 9: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 10: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 11: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 12: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 13: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 14: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 15: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+✗ Failed to update embedding for user 16: ReferenceError: sql is not defined
+    at vectorizeAllProfiles (/home/runner/workspace/scripts/vectorize.ts:17:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+
+Vectorization complete!
+Success: 0
+Failed: 16

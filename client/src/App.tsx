@@ -528,7 +528,9 @@ function UserList({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <Search onSelectResult={(user) => onSelect(user)} />
+        <div className="flex items-center gap-2">
+          <Search onSelectResult={(user) => onSelect(user)} />
+        </div>
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">
             {isLoggedIn ? "Suggested Matches" : "Featured Profiles"}

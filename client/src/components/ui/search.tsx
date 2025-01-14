@@ -57,13 +57,14 @@ export function Search({ onSelectResult }: SearchProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex-1">
       <div className="flex gap-2">
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search profiles..."
           onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          className="flex-1"
         />
         <Button onClick={handleSearch} disabled={loading}>
           {loading ? 'Searching...' : 'Search'}

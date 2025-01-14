@@ -1,147 +1,73 @@
-import { pgTable, text, serial, integer, timestamp, boolean, decimal } from "drizzle-orm/pg-core";
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { relations } from "drizzle-orm";
-import { z } from "zod";
+import { InferModel } from "drizzle-orm";
+import {
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  boolean,
+  integer,
+  pgEnum,
+  vector,
+} from "drizzle-orm/pg-core";
 
-export const genderEnum = z.enum(["Male", "Female", "Other"]);
+export const genderEnum = pgEnum("gender", ["male", "female", "other"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
-  email: text("email").unique().notNull(),
-  name: text("name").notNull(),
-  age: integer("age").notNull(),
-  location: text("location").notNull(),
-  latitude: decimal("latitude", { precision: 10, scale: 6 }),
-  longitude: decimal("longitude", { precision: 10, scale: 6 }),
-  gender: text("gender", { enum: ["Male", "Female", "Other"] }).notNull(),
-  publicDescription: text("public_description").notNull(),
-  privateDescription: text("private_description").notNull(),
-  socialIds: text("social_ids").notNull(),
-  photoUrl: text("photo_url").notNull(),
-  createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-  newsletterEnabled: boolean("newsletter_enabled").default(true).notNull(),
-});
-
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  senderId: integer("sender_id").references(() => users.id).notNull(),
-  receiverId: integer("receiver_id").references(() => users.id).notNull(),
-  content: text("content").notNull(),
-  read: boolean("read").default(false).notNull(),
-  createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-});
-
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  messageId: integer("message_id").references(() => messages.id),
-  type: text("type", { enum: ["message", "match", "system"] }).notNull(),
-  content: text("content").notNull(),
-  read: boolean("read").default(false).notNull(),
-  createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+  email: text("email").notNull(),
+  name: text("name"),
+  age: integer("age"),
+  gender: genderEnum("gender"),
+  location: text("location"),
+  latitude: text("latitude"),
+  longitude: text("longitude"),
+  photoUrl: text("photo_url"),
+  publicDescription: text("public_description"),
+  privateDescription: text("private_description"),
+  socialIds: text("social_ids"),
+  newsletterEnabled: boolean("newsletter_enabled").default(true),
+  embedding: vector("embedding", { dimensions: 384 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const matches = pgTable("matches", {
   id: serial("id").primaryKey(),
-  user1Id: integer("user1_id").references(() => users.id).notNull(),
-  user2Id: integer("user2_id").references(() => users.id).notNull(),
-  percentage: integer("percentage").notNull(),
-  createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+  user1Id: integer("user1_id").references(() => users.id),
+  user2Id: integer("user2_id").references(() => users.id),
+  percentage: integer("percentage"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  senderId: integer("sender_id").references(() => users.id),
+  receiverId: integer("receiver_id").references(() => users.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  type: text("type").notNull(),
+  content: text("content").notNull(),
+  read: boolean("read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const notes = pgTable("notes", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id),
+  type: text("type").notNull(),
   content: text("content").notNull(),
-  type: text("type").notNull(), // "public" or "private"
-  createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull()
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Relations
-export const usersRelations = relations(users, ({ many }) => ({
-  sentMessages: many(messages, { relationName: "sender" }),
-  receivedMessages: many(messages, { relationName: "receiver" }),
-  notifications: many(notifications),
-  matchesAsUser1: many(matches, { relationName: "user1_matches" }),
-  matchesAsUser2: many(matches, { relationName: "user2_matches" }),
-  notes: many(notes)
-}));
-
-export const messagesRelations = relations(messages, ({ one }) => ({
-  sender: one(users, {
-    fields: [messages.senderId],
-    references: [users.id],
-    relationName: "sender"
-  }),
-  receiver: one(users, {
-    fields: [messages.receiverId],
-    references: [users.id],
-    relationName: "receiver"
-  }),
-  notifications: one(notifications, {
-    fields: [messages.id],
-    references: [notifications.messageId]
-  })
-}));
-
-export const notificationsRelations = relations(notifications, ({ one }) => ({
-  user: one(users, {
-    fields: [notifications.userId],
-    references: [users.id]
-  }),
-  message: one(messages, {
-    fields: [notifications.messageId],
-    references: [messages.id]
-  })
-}));
-
-export const matchesRelations = relations(matches, ({ one }) => ({
-  user1: one(users, {
-    fields: [matches.user1Id],
-    references: [users.id],
-    relationName: "user1_matches",
-  }),
-  user2: one(users, {
-    fields: [matches.user2Id],
-    references: [users.id],
-    relationName: "user2_matches",
-  }),
-}));
-
-// Schemas
-export const insertUserSchema = createInsertSchema(users, {
-  gender: genderEnum
-});
-export const selectUserSchema = createSelectSchema(users);
-
-export const insertMessageSchema = createInsertSchema(messages);
-export const selectMessageSchema = createSelectSchema(messages);
-
-export const insertNotificationSchema = createInsertSchema(notifications);
-export const selectNotificationSchema = createSelectSchema(notifications);
-
-export const insertMatchSchema = createInsertSchema(matches);
-export const selectMatchSchema = createSelectSchema(matches);
-
-export const insertNoteSchema = createInsertSchema(notes);
-export const selectNoteSchema = createSelectSchema(notes);
-
-// Types
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
-
-export type Message = typeof messages.$inferSelect;
-export type NewMessage = typeof messages.$inferInsert;
-
-export type Notification = typeof notifications.$inferSelect;
-export type NewNotification = typeof notifications.$inferInsert;
-
-export type Match = typeof matches.$inferSelect;
-export type NewMatch = typeof matches.$inferInsert;
-
-export type Note = typeof notes.$inferSelect;
-export type NewNote = typeof notes.$inferInsert;
-
-export type Gender = z.infer<typeof genderEnum>;
+export type User = InferModel<typeof users>;
+export type Match = InferModel<typeof matches>;
+export type Message = InferModel<typeof messages>;
+export type Notification = InferModel<typeof notifications>;
+export type Note = InferModel<typeof notes>;

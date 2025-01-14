@@ -537,16 +537,7 @@ function UserList({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <div className="relative">
-          <h2 className="text-xl items-center font-bold">Who do you want to connect with?</h2>
-          <Input
-            className="w-full pl-10 pr-4 py-3 rounded-xl border-primary/20 bg-muted/50 focus-visible:ring-primary/20"
-            placeholder="Message PeepsGPT..."
-          />
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </div>
+        <Search onSelectResult={onSelect} />
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">
             {isLoggedIn ? "Suggested Matches" : "Featured Profiles"}
@@ -977,7 +968,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: (data: User) =>
             {...register("publicDescription")}
             placeholder="Tell others about yourself"
           />
-        </div>
+                </div>
 
         <div>
           <h3 className="text-lg font-medium mb-2">Private Description</h3>

@@ -5,7 +5,11 @@ import { Button } from './button';
 import { Card } from './card';
 import { Avatar } from './avatar';
 
-export function Search() {
+interface SearchProps {
+  onSelectResult?: (user: any) => void;
+}
+
+export function Search({ onSelectResult }: SearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,7 +51,11 @@ export function Search() {
 
       <div className="space-y-2">
         {results.map((result: any) => (
-          <Card key={result.id} className="p-4">
+          <Card 
+            key={result.id} 
+            className="p-4 cursor-pointer hover:border-primary/30 transition-all duration-300" 
+            onClick={() => onSelectResult?.(result)}
+          >
             <div className="flex items-center gap-4">
               <Avatar src={result.photo_url} alt={result.name} />
               <div>

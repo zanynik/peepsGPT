@@ -6,7 +6,15 @@ import { Avatar } from './avatar';
 import { useToast } from './use-toast'; // Assuming you have a toast hook
 
 interface SearchProps {
-  onSelectResult?: (user: any) => void;
+  onSelectResult: (user: any) => void;
+}
+
+interface SearchResult {
+  id: number;
+  name: string;
+  photo_url: string;
+  public_description: string;
+  similarity: number;
 }
 
 export function Search({ onSelectResult }: SearchProps) {

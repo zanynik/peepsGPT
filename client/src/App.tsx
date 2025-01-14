@@ -528,16 +528,7 @@ function UserList({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Input
-            type="text"
-            placeholder="Search profiles..."
-            className="flex-1"
-          />
-          <Button variant="outline" size="icon">
-            <Search className="h-4 w-4" />
-          </Button>
-        </div>
+        <Search onSelectResult={(user) => onSelect(user)} />
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">
             {isLoggedIn ? "Suggested Matches" : "Featured Profiles"}

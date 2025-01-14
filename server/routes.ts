@@ -137,7 +137,8 @@ export function registerRoutes(app: Express): Server {
       const { username, password, email, location, ...profile } = req.body;
 
       // Validate gender
-      if (!genderEnum.safeParse(profile.gender).success) {
+      const validGenders = ["male", "female", "other"];
+      if (!validGenders.includes(profile.gender?.toLowerCase())) {
         return res.status(400).send("Invalid gender value");
       }
 

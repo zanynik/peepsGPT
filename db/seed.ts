@@ -2,7 +2,7 @@
 import { db } from "./index";
 import { users, matches } from "./schema";
 import { sql } from "drizzle-orm";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 
 const scryptAsync = promisify(scrypt);
@@ -26,8 +26,8 @@ const mbtiProfiles = [
     latitude: "47.6062",
     longitude: "-122.3321",
     gender: "Other",
-    publicDescription: "Strategic thinker and innovator. Driven by knowledge and improvement. Interested in complex systems and long-term planning.",
-    privateDescription: "Sometimes struggle with expressing emotions. Need lots of alone time to recharge. Perfectionist tendencies can be overwhelming.",
+    publicDescription: "Strategic thinker and innovator. Driven by knowledge and improvement. Interested in complex systems and long-term planning. Known for developing innovative solutions and pushing boundaries in technology and science.",
+    privateDescription: "Sometimes struggle with expressing emotions. Need lots of alone time to recharge. Perfectionist tendencies can be overwhelming. Often feel misunderstood due to direct communication style.",
   },
   {
     type: "INTP",
@@ -39,8 +39,8 @@ const mbtiProfiles = [
     latitude: "42.3601",
     longitude: "-71.0589",
     gender: "Other",
-    publicDescription: "Analytical problem-solver with a passion for theoretical concepts. Always exploring new ideas and possibilities.",
-    privateDescription: "Often get lost in thoughts and forget practical matters. Struggle with deadlines and routine tasks.",
+    publicDescription: "Analytical problem-solver fascinated by theoretical concepts. Love exploring abstract ideas and finding logical inconsistencies. Always questioning assumptions and seeking deeper understanding.",
+    privateDescription: "Often get lost in thoughts and forget practical matters. Struggle with deadlines and routine tasks. Can appear aloof when deeply focused on solving complex problems.",
   },
   {
     type: "ENTJ",
@@ -52,8 +52,8 @@ const mbtiProfiles = [
     latitude: "40.7128",
     longitude: "-74.0060",
     gender: "Female",
-    publicDescription: "Natural leader with a drive for efficiency and achievement. Expert at organizing people and resources.",
-    privateDescription: "Can be too demanding of others and self. Working on being more patient with different perspectives.",
+    publicDescription: "Natural leader with a drive for efficiency and achievement. Expert at organizing people and resources. Strategic visionary focused on implementing long-term plans and achieving goals.",
+    privateDescription: "Can be too demanding of others and self. Working on being more patient with different perspectives. Sometimes struggle with emotional situations and need to develop more empathy.",
   },
   {
     type: "ENTP",
@@ -65,8 +65,8 @@ const mbtiProfiles = [
     latitude: "37.7749",
     longitude: "-122.4194",
     gender: "Male",
-    publicDescription: "Quick-witted and versatile. Love challenging assumptions and sparking innovative discussions.",
-    privateDescription: "Sometimes argue just for fun. Need to work on following through with projects.",
+    publicDescription: "Quick-witted and versatile thinker. Love challenging assumptions and sparking innovative discussions. Excellent at brainstorming and seeing possibilities others miss.",
+    privateDescription: "Sometimes argue just for fun which can strain relationships. Need to work on following through with projects. Can be insensitive to others' feelings when caught up in debates.",
   },
   {
     type: "INFJ",
@@ -78,8 +78,8 @@ const mbtiProfiles = [
     latitude: "45.5155",
     longitude: "-122.6789",
     gender: "Female",
-    publicDescription: "Idealistic and empathetic. Dedicated to making the world better and understanding others deeply.",
-    privateDescription: "Often feel misunderstood. Need to avoid taking on others' emotional burdens too much.",
+    publicDescription: "Idealistic and empathetic counselor. Dedicated to making positive changes in the world and understanding others deeply. Passionate about personal growth and helping others reach their potential.",
+    privateDescription: "Often feel misunderstood and overwhelmed by others' emotions. Need to avoid taking on others' emotional burdens too much. Struggle with perfectionism and being too hard on self.",
   },
   {
     type: "INFP",
@@ -91,8 +91,8 @@ const mbtiProfiles = [
     latitude: "30.2672",
     longitude: "-97.7431",
     gender: "Other",
-    publicDescription: "Creative soul seeking authentic connections. Passionate about personal growth and helping others.",
-    privateDescription: "Struggle with criticism and practical demands. Sometimes get lost in daydreams and ideals.",
+    publicDescription: "Creative soul seeking authentic connections. Passionate about personal growth and helping others find their path. Deeply interested in understanding human nature and creating meaningful art.",
+    privateDescription: "Struggle with criticism and practical demands. Sometimes get lost in daydreams and ideals. Can be too perfectionist about creative projects and have trouble with deadlines.",
   },
   {
     type: "ENFJ",
@@ -104,8 +104,8 @@ const mbtiProfiles = [
     latitude: "41.8781",
     longitude: "-87.6298",
     gender: "Female",
-    publicDescription: "Natural mentor and inspirational leader. Devoted to fostering growth in others.",
-    privateDescription: "Can be too selfless and neglect own needs. Working on setting better boundaries.",
+    publicDescription: "Natural mentor and inspirational leader. Devoted to fostering growth in others. Excellent at reading people and bringing out their best potential. Passionate about community building.",
+    privateDescription: "Can be too selfless and neglect own needs. Working on setting better boundaries. Sometimes take rejection of ideas too personally and need to separate self from work.",
   },
   {
     type: "ENFP",
@@ -117,8 +117,8 @@ const mbtiProfiles = [
     latitude: "39.7392",
     longitude: "-104.9903",
     gender: "Male",
-    publicDescription: "Enthusiastic explorer of ideas and possibilities. Love connecting with people and starting new projects.",
-    privateDescription: "Get easily distracted by new interests. Need to work on following through and staying organized.",
+    publicDescription: "Enthusiastic explorer of ideas and possibilities. Love connecting with people and starting new projects. Natural at inspiring others and seeing potential in everything.",
+    privateDescription: "Get easily distracted by new interests. Need to work on following through and staying organized. Can be overwhelmed by too many possibilities and struggle with decisions.",
   },
   {
     type: "ISTJ",
@@ -130,8 +130,8 @@ const mbtiProfiles = [
     latitude: "38.9072",
     longitude: "-77.0369",
     gender: "Female",
-    publicDescription: "Reliable and systematic. Value tradition, order, and honest work.",
-    privateDescription: "Can be too rigid with rules and expectations. Working on adapting to change more easily.",
+    publicDescription: "Reliable and systematic professional. Value tradition, order, and honest work. Excellent at maintaining systems and ensuring everything runs smoothly. Detail-oriented and trustworthy.",
+    privateDescription: "Can be too rigid with rules and expectations. Working on adapting to change more easily. Sometimes struggle with expressing emotions and understanding others' feelings.",
   },
   {
     type: "ISFJ",
@@ -143,8 +143,8 @@ const mbtiProfiles = [
     latitude: "25.7617",
     longitude: "-80.1918",
     gender: "Male",
-    publicDescription: "Caring and dedicated protector. Committed to serving others and maintaining harmony.",
-    privateDescription: "Tendency to overextend and neglect self-care. Need to learn to say no sometimes.",
+    publicDescription: "Caring and dedicated protector. Committed to serving others and maintaining harmony. Excellent at remembering details about people and creating comfortable environments.",
+    privateDescription: "Tendency to overextend and neglect self-care. Need to learn to say no sometimes. Can take criticism too personally and worry too much about others' opinions.",
   },
   {
     type: "ESTJ",
@@ -156,8 +156,8 @@ const mbtiProfiles = [
     latitude: "39.9526",
     longitude: "-75.1652",
     gender: "Female",
-    publicDescription: "Natural organizer and leader. Value clear structures and traditional methods.",
-    privateDescription: "Can be too quick to judge. Working on being more open to alternative approaches.",
+    publicDescription: "Natural organizer and decisive leader. Value clear structures and traditional methods. Excellent at implementing systems and maintaining order. Results-oriented and reliable.",
+    privateDescription: "Can be too quick to judge and dismiss new ideas. Working on being more open to alternative approaches. Sometimes struggle with understanding emotional needs of others.",
   },
   {
     type: "ESFJ",
@@ -169,8 +169,8 @@ const mbtiProfiles = [
     latitude: "33.7490",
     longitude: "-84.3880",
     gender: "Male",
-    publicDescription: "Caring and social, focused on creating harmony. Love helping others and building community.",
-    privateDescription: "Sometimes too sensitive to criticism. Need to work on not taking things personally.",
+    publicDescription: "Caring and social, focused on creating harmony. Love helping others and building community. Excellent at organizing social events and maintaining traditions.",
+    privateDescription: "Sometimes too sensitive to criticism. Need to work on not taking things personally. Can be too focused on social status and others' opinions.",
   },
   {
     type: "ISTP",
@@ -182,8 +182,8 @@ const mbtiProfiles = [
     latitude: "36.1699",
     longitude: "-115.1398",
     gender: "Other",
-    publicDescription: "Skilled troubleshooter with a knack for practical solutions. Love exploring how things work.",
-    privateDescription: "Can be too detached from emotions. Need to work on long-term planning and commitment.",
+    publicDescription: "Skilled troubleshooter with a knack for practical solutions. Love exploring how things work. Excellent at understanding mechanical and technical systems. Adventure-seeking and adaptable.",
+    privateDescription: "Can be too detached from emotions. Need to work on long-term planning and commitment. Sometimes struggle with expressing feelings and maintaining close relationships.",
   },
   {
     type: "ISFP",
@@ -195,8 +195,8 @@ const mbtiProfiles = [
     latitude: "34.0522",
     longitude: "-118.2437",
     gender: "Male",
-    publicDescription: "Artistic soul with a love for beauty and authenticity. Living in the moment.",
-    privateDescription: "Struggle with confrontation and planning ahead. Need to work on being more assertive.",
+    publicDescription: "Artistic soul with a love for beauty and authenticity. Living in the moment and creating beautiful experiences. Excellent at bringing artistic vision to life.",
+    privateDescription: "Struggle with confrontation and planning ahead. Need to work on being more assertive. Can be too sensitive to criticism and avoid necessary conflicts.",
   },
   {
     type: "ESTP",
@@ -208,8 +208,8 @@ const mbtiProfiles = [
     latitude: "29.7604",
     longitude: "-95.3698",
     gender: "Female",
-    publicDescription: "Action-oriented thrill-seeker. Love taking risks and solving immediate challenges.",
-    privateDescription: "Can be impulsive and overlook long-term consequences. Working on patience and planning.",
+    publicDescription: "Action-oriented thrill-seeker. Love taking risks and solving immediate challenges. Natural entrepreneur with excellent situational awareness. Always ready for adventure.",
+    privateDescription: "Can be impulsive and overlook long-term consequences. Working on patience and planning. Sometimes struggle with commitment and following through on long-term projects.",
   },
   {
     type: "ESFP",
@@ -221,8 +221,8 @@ const mbtiProfiles = [
     latitude: "28.5383",
     longitude: "-81.3792",
     gender: "Male",
-    publicDescription: "Spontaneous entertainer with a zest for life. Love bringing joy to others and living in the moment.",
-    privateDescription: "Sometimes avoid serious discussions and responsibilities. Need to work on focus and discipline.",
+    publicDescription: "Spontaneous entertainer with a zest for life. Love bringing joy to others and living in the moment. Natural performer who excels at making life fun and exciting.",
+    privateDescription: "Sometimes avoid serious discussions and responsibilities. Need to work on focus and discipline. Can be too focused on immediate pleasures and avoid planning for the future.",
   },
 ];
 
@@ -243,7 +243,7 @@ async function seed() {
         socialIds: `twitter:@${profile.username}`,
         newsletterEnabled: true,
         createdAt: new Date(),
-        type: profile.type,
+        updatedAt: new Date(),
       });
     }
     

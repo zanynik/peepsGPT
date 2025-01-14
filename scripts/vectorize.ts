@@ -17,7 +17,7 @@ async function vectorizeAllProfiles() {
       const embedding = await generateEmbedding(combinedText);
       await db.execute(sql`
         UPDATE users 
-        SET embedding = ${embedding}::vector(1536),
+        SET embedding = array_to_vector(ARRAY[${sql.join(embedding)}]::float8[]),
             updated_at = NOW()
         WHERE id = ${user.id}
       `);

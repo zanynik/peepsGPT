@@ -428,7 +428,7 @@ export function registerRoutes(app: Express): Server {
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, 10);
 
-    res.json(results.rows);
+    res.json(results);
   } catch (error) {
     console.error("Search error:", error);
     res.status(500).json({ error: "Search failed" });

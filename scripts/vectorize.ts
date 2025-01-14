@@ -14,11 +14,15 @@ async function vectorizeAllProfiles() {
 
     try {
       const embedding = await generateEmbedding(combinedText);
+      console.log('Generated embedding:', embedding); // Debugging
 
-      // Directly pass the embedding array to the SQL query
+      // Format the embedding array as a PostgreSQL-compatible string
+      const embeddingArray = `{${embedding.join(',')}}`;
+
+      // Update the user's embedding
       await db.execute(sql`
         UPDATE users 
-        SET embedding = ${embedding}::float8[],
+        SET embedding = ${embeddingArray}::float8[],
             updated_at = NOW()
         WHERE id = ${user.id}
       `);

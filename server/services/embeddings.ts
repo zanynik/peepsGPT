@@ -29,7 +29,8 @@ export async function updateUserEmbedding(userId: number, publicDesc: string, pr
   
   await db.execute(sql`
     UPDATE users 
-    SET embedding = ${sql.raw(`'[${embedding.join(',')}]'::vector`)}
+    SET embedding = ${embedding}::vector(1536),
+        updated_at = NOW()
     WHERE id = ${userId}
   `);
 }

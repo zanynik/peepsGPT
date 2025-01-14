@@ -2,6 +2,7 @@
 import { db } from '../db';
 import { users } from '../db/schema';
 import { generateEmbedding } from '../server/services/embeddings';
+import { sql } from 'drizzle-orm';
 
 async function vectorizeAllProfiles() {
   const allUsers = await db.select().from(users);

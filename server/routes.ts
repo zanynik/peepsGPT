@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
 import { users, matches, genderEnum, messages, notifications } from "@db/schema";
-import { eq, and, desc, between } from "drizzle-orm";
+import { eq, and, desc, between, sql } from "drizzle-orm";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import session from "express-session";

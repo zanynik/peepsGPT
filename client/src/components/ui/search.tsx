@@ -3,7 +3,7 @@ import { Input } from './input';
 import { Button } from './button';
 import { Card } from './card';
 import { Avatar } from './avatar';
-import { useToast } from './use-toast'; // Assuming you have a toast hook
+import { useToast } from '@/hooks/use-toast';
 
 interface SearchProps {
   onSelectResult: (user: any) => void;

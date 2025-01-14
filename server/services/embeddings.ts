@@ -1,21 +1,24 @@
 
-import OpenAI from 'openai';
+import { pipeline } from '@xenova/transformers';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { sql } from 'drizzle-orm';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+let embeddingModel: any = null;
+
+async function getEmbeddingModel() {
+  if (!embeddingModel) {
+    embeddingModel = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+      quantized: false
+    });
+  }
+  return embeddingModel;
+}
 
 export async function generateEmbedding(text: string) {
-  const response = await openai.embeddings.create({
-    input: text,
-    model: "text-embedding-3-small",
-    encoding_format: "float",
-  });
-  
-  return response.data[0].embedding;
+  const model = await getEmbeddingModel();
+  const output = await model(text, { pooling: 'mean', normalize: true });
+  return Array.from(output.data);
 }
 
 export async function updateUserEmbedding(userId: number, publicDesc: string, privateDesc: string) {

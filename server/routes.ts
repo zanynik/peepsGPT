@@ -403,7 +403,7 @@ export function registerRoutes(app: Express): Server {
 
     const results = await db.execute(sql`
       SELECT id, username, name, public_description, photo_url, 
-             1 - (embedding <=> ${embeddingArray}::float8[]) as similarity
+             1 - (embedding <-> ${embeddingArray}::float8[]) as similarity
       FROM users
       WHERE embedding IS NOT NULL
       ORDER BY similarity DESC

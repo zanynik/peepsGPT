@@ -401,14 +401,32 @@ export function registerRoutes(app: Express): Server {
     const queryEmbedding = await generateEmbedding(query);
     const embeddingArray = `{${queryEmbedding.join(',')}}`;
 
-    const results = await db.execute(sql`
-      SELECT id, username, name, public_description, photo_url, 
-             1 - (embedding <=> ${embeddingArray}::vector) as similarity
-      FROM users
-      WHERE embedding IS NOT NULL
-      ORDER BY similarity DESC
-      LIMIT 10
-    `);
+    const cosineSimilarity = (vec1: number[], vec2: number[]) => {
+      const dotProduct = vec1.reduce((sum, val, idx) => sum + val * vec2[idx], 0);
+      const magnitude1 = Math.sqrt(vec1.reduce((sum, val) => sum + val ** 2, 0));
+      const magnitude2 = Math.sqrt(vec2.reduce((sum, val) => sum + val ** 2, 0));
+      return dotProduct / (magnitude1 * magnitude2);
+    };
+
+    const allUsers = await db.query.users.findMany({
+      columns: {
+        id: true,
+        username: true,
+        name: true,
+        publicDescription: true,
+        photoUrl: true,
+        embedding: true
+      }
+    });
+
+    const results = allUsers
+      .filter(user => user.embedding && user.embedding.length > 0)
+      .map(user => ({
+        ...user,
+        similarity: cosineSimilarity(queryEmbedding, user.embedding)
+      }))
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, 10);
 
     res.json(results.rows);
   } catch (error) {

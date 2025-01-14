@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sun, Moon, MapPin, Calendar, User2, Mail, Search } from "lucide-react";
+import { Sun, Moon, MapPin, Calendar, User2, Mail } from "lucide-react";
+import { Search } from "@/components/ui/search";
 import { useForm } from "react-hook-form";
 import {
   Select,
@@ -529,7 +530,9 @@ function UserList({
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Search onSelectResult={(user) => onSelect(user)} />
+          <div className="w-full">
+            <Search onSelectResult={onSelect} />
+          </div>
         </div>
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">

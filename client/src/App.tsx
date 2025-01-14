@@ -21,10 +21,8 @@ import { Switch, Route } from "wouter";
 import { AlertCircle } from "lucide-react";
 import { MessagingLayout } from "@/components/messaging/MessagingLayout";
 
-// Define Gender type
 type Gender = "Male" | "Female" | "Other";
 
-// Define User type since it's not being imported correctly
 interface User {
   id: number;
   name: string;
@@ -53,20 +51,24 @@ interface UserProfileProps {
 type AuthFormType = 'login' | 'register' | false;
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithMatch | null>(null);
+  const [showAuthForm, setShowAuthForm] = useState<AuthFormType>(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     const theme = localStorage.getItem('theme') || 'light';
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     }
 
-    // Check actual session status from server
     fetch('/api/user')
       .then(res => {
         if (res.ok) {
           setIsLoggedIn(true);
           return res.json();
         }
-        // If not logged in, clear session storage
         sessionStorage.removeItem('isLoggedIn');
         setIsLoggedIn(false);
         throw new Error('Not authenticated');
@@ -76,18 +78,11 @@ function App() {
       });
   }, []);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserWithMatch | null>(null);
-  const [showAuthForm, setShowAuthForm] = useState<AuthFormType>(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
   const { data: currentUser, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
     enabled: isLoggedIn,
   });
 
-  // Fetch random profiles when not logged in
   const getRandomProfiles = () => {
     const demoProfiles: UserWithMatch[] = [
       {
@@ -124,7 +119,6 @@ function App() {
     return demoProfiles.sort(() => Math.random() - 0.5).slice(0, 2);
   };
 
-  // Fetch users only when logged in
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
     queryKey: ["/api/users"],
     enabled: isLoggedIn,
@@ -197,8 +191,8 @@ function App() {
     await fetch('/api/logout', { method: 'POST' });
     setIsLoggedIn(false);
     sessionStorage.removeItem('isLoggedIn');
-    setSelectedUser(null); // Return to home screen
-    queryClient.clear(); // Clear React Query cache
+    setSelectedUser(null);
+    queryClient.clear();
   };
 
   if (isLoggedIn && userLoading) {
@@ -209,7 +203,6 @@ function App() {
     );
   }
 
-  // fallback 404 not found page
   function NotFound() {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
@@ -219,7 +212,6 @@ function App() {
               <AlertCircle className="h-8 w-8 text-red-500" />
               <h1 className="text-2xl font-bold text-gray-900">404 Page Not Found</h1>
             </div>
-
             <p className="mt-4 text-sm text-gray-600">
               Did you forget to add the page to the router?
             </p>
@@ -228,7 +220,6 @@ function App() {
       </div>
     );
   }
-
 
   return (
     <Switch>
@@ -537,7 +528,16 @@ function UserList({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <Search onSelectResult={onSelect} />
+        <div className="flex items-center gap-2">
+          <Input
+            type="text"
+            placeholder="Search profiles..."
+            className="flex-1"
+          />
+          <Button variant="outline" size="icon">
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">
             {isLoggedIn ? "Suggested Matches" : "Featured Profiles"}
@@ -968,7 +968,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: (data: User) =>
             {...register("publicDescription")}
             placeholder="Tell others about yourself"
           />
-                </div>
+        </div>
 
         <div>
           <h3 className="text-lg font-medium mb-2">Private Description</h3>

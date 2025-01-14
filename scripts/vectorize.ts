@@ -1,4 +1,3 @@
-
 import { db } from '../db';
 import { users } from '../db/schema';
 import { generateEmbedding } from '../server/services/embeddings';
@@ -8,20 +7,22 @@ async function vectorizeAllProfiles() {
   const allUsers = await db.select().from(users);
   let success = 0;
   let failed = 0;
-  
+
   for (const user of allUsers) {
     const combinedText = `${user.publicDescription || ''} ${user.privateDescription || ''}`.trim();
     if (!combinedText) continue;
-    
+
     try {
       const embedding = await generateEmbedding(combinedText);
+
+      // Directly pass the embedding array to the SQL query
       await db.execute(sql`
         UPDATE users 
-        SET embedding = array_to_vector(ARRAY[${sql.join(embedding)}]::float8[]),
+        SET embedding = ${embedding}::float8[],
             updated_at = NOW()
         WHERE id = ${user.id}
       `);
-      
+
       console.log(`✓ Updated embedding for user ${user.id}`);
       success++;
     } catch (error) {
@@ -29,7 +30,7 @@ async function vectorizeAllProfiles() {
       failed++;
     }
   }
-  
+
   console.log(`\nVectorization complete!\nSuccess: ${success}\nFailed: ${failed}`);
 }
 

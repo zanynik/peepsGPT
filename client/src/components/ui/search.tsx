@@ -76,19 +76,41 @@ export function Search({ onSelectResult }: SearchProps) {
           results.map((result) => (
             <Card
               key={result.id}
-              className="p-4 cursor-pointer hover:border-primary/30 transition-all duration-300"
+              className="group cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden bg-card/50"
               onClick={() => onSelectResult?.(result)}
             >
-              <div className="flex items-center gap-4">
-                <Avatar src={result.photo_url} alt={result.name} />
-                <div>
-                  <h3 className="font-medium">{result.name}</h3>
-                  <p className="text-sm text-gray-500">{result.public_description}</p>
-                  <p className="text-xs text-gray-400">
-                    Similarity: {(result.similarity * 100).toFixed(1)}%
-                  </p>
-                </div>
+              <div className="aspect-video relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
+                {result.photoUrl && (
+                  <img
+                    src={result.photoUrl}
+                    alt={result.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-semibold text-lg">{result.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {result.age} • {result.gender}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="inline-block px-2 py-1 text-sm font-semibold rounded-full bg-primary/10 text-primary">
+                        {(result.similarity * 100).toFixed(1)}% Match
+                      </span>
+                    </div>
+                  </div>
+                  {result.publicDescription && (
+                    <p className="text-sm line-clamp-2">
+                      {result.publicDescription.split("\n")[0]}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
             </Card>
           ))
         ) : (

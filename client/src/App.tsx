@@ -535,24 +535,22 @@ function UserList({
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-bold text-foreground">
             {isLoggedIn ? "Suggested Connections" : "Featured Profiles"}
           </h2>
-          {!isLoggedIn && (
-            <Button
-              variant="outline"
-              className="flex items-center gap-2"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4" />
-              <span>Filters</span>
-              {Object.values(filters).some((v) => v !== "all" && v !== "0") && (
-                <span className="ml-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                  •
-                </span>
-              )}
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {Object.values(filters).some((v) => v !== "all" && v !== "0") && (
+              <span className="ml-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                •
+              </span>
+            )}
+          </Button>
         </div>
       </div>
 

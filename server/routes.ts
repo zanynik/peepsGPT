@@ -390,7 +390,33 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/share/:userId", async (req, res) => {
+  app.post("/api/search", async (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ error: "Invalid query" });
+    }
+
+    const queryEmbedding = await generateEmbedding(query);
+    const embeddingArray = `{${queryEmbedding.join(',')}}`;
+
+    const results = await db.execute(sql`
+      SELECT id, username, name, public_description, photo_url, 
+             1 - (embedding <=> ${embeddingArray}::float8[]) as similarity
+      FROM users
+      WHERE embedding IS NOT NULL
+      ORDER BY similarity DESC
+      LIMIT 10
+    `);
+
+    res.json(results.rows);
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
+app.get("/api/share/:userId", async (req, res) => {
     const { userId } = req.params;
     const user = await db.query.users.findFirst({
       where: eq(users.id, parseInt(userId))

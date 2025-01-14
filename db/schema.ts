@@ -28,7 +28,7 @@ export const users = pgTable("users", {
   privateDescription: text("private_description"),
   socialIds: text("social_ids"),
   newsletterEnabled: boolean("newsletter_enabled").default(true),
-  embedding: vector("embedding", { dimensions: 1536 }),
+  embedding: text("embedding").array(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

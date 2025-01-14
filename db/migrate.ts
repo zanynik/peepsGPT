@@ -36,7 +36,7 @@ async function runMigration() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
       newsletter_enabled BOOLEAN DEFAULT TRUE NOT NULL,
-      embedding vector(1536)
+      embedding float8[]
     );
 
     CREATE TABLE IF NOT EXISTS matches (

@@ -508,49 +508,41 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
   );
 }
 
-function UserList({
-  onSelect,
-  users,
-  isLoggedIn,
-  filters,
-  setFilters
-}: {
-  onSelect: (user: UserWithMatch) => void;
-  users: UserWithMatch[];
-  isLoggedIn: boolean;
-  filters: {
-    minAge: string;
-    maxAge: string;
-    gender: string;
-    maxDistance: string;
-  };
-  setFilters: (filters: any) => void;
-}) {
-
-  const [showFilters, setShowFilters] = useState(false);
-  const [tempFilters, setTempFilters] = useState({
-    ...filters,
-    anyDistance: filters.maxDistance === "0",
-  });
-
-  const handleApplyFilters = () => {
-    setFilters({
-      ...tempFilters,
-      maxDistance: tempFilters.anyDistance ? "0" : tempFilters.maxDistance,
+  function UserList({
+    onSelect,
+    users,
+    isLoggedIn,
+    filters,
+    setFilters
+  }: {
+    onSelect: (user: UserWithMatch) => void;
+    users: UserWithMatch[];
+    isLoggedIn: boolean;
+    filters: {
+      minAge: string;
+      maxAge: string;
+      gender: string;
+      maxDistance: string;
+    };
+    setFilters: (filters: any) => void;
+  }) {
+  
+    const [showFilters, setShowFilters] = useState(false);
+    const [tempFilters, setTempFilters] = useState({
+      ...filters,
+      anyDistance: filters.maxDistance === "0",
     });
-    setShowFilters(false);
-  };
+  
+    const handleApplyFilters = () => {
+      setFilters({
+        ...tempFilters,
+        maxDistance: tempFilters.anyDistance ? "0" : tempFilters.maxDistance,
+      });
+      setShowFilters(false);
+    };
 
-  if (!users) {
     return (
-      <div className="flex items-center justify-center h-40">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
+      <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <div className="w-full">

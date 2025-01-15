@@ -279,7 +279,7 @@ export function registerRoutes(app: Express): Server {
           // Distance filter (skip if maxDistance is "0")
           if (
             maxDistance &&
-            maxDistance !== "0" &&
+            maxDistance !== 0 &&
             currentUser.latitude &&
             currentUser.longitude &&
             user.latitude &&
@@ -291,7 +291,7 @@ export function registerRoutes(app: Express): Server {
               parseFloat(user.latitude),
               parseFloat(user.longitude)
             );
-            if (distance > parseInt(maxDistance as string)) return false;
+            if (distance > maxDistance) return false;
           }
 
           return true;
@@ -323,6 +323,17 @@ export function registerRoutes(app: Express): Server {
           return { ...user, matchPercentage: existingMatch.percentage };
         })
       );
+
+      const sortedUsers = usersWithMatches.sort(
+        (a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0)
+      );
+
+      res.json(sortedUsers);
+    } catch (error: any) {
+      console.error("Get users error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
+  });
 
       const sortedUsers = usersWithMatches.sort(
         (a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0)

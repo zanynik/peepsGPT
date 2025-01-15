@@ -121,9 +121,20 @@ function App() {
   };
 
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users", filters],
     enabled: isLoggedIn,
-    initialData: !isLoggedIn ? getRandomProfiles() : []
+    initialData: !isLoggedIn ? getRandomProfiles() : [],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        minAge: filters.minAge,
+        maxAge: filters.maxAge,
+        gender: filters.gender,
+        maxDistance: filters.maxDistance
+      });
+      const response = await fetch(`/api/users?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch users');
+      return response.json();
+    }
   });
 
   const loginMutation = useMutation({

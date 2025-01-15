@@ -246,6 +246,11 @@ export function registerRoutes(app: Express): Server {
   });
 
   app.get("/api/users", async (req, res) => {
+    // Prevent caching
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     if (!req.session.userId) {
       return res.status(401).send("Not authenticated");
     }
@@ -323,17 +328,6 @@ export function registerRoutes(app: Express): Server {
           return { ...user, matchPercentage: existingMatch.percentage };
         })
       );
-
-      const sortedUsers = usersWithMatches.sort(
-        (a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0)
-      );
-
-      res.json(sortedUsers);
-    } catch (error: any) {
-      console.error("Get users error:", error);
-      res.status(500).send(error.message || "Server error");
-    }
-  });
 
       const sortedUsers = usersWithMatches.sort(
         (a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0)

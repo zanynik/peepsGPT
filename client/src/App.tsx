@@ -79,16 +79,16 @@ function App() {
       });
   }, []);
 
-  const { data: currentUser, isLoading: userLoading } = useQuery<User>({
-    queryKey: ["/api/user"],
-    enabled: isLoggedIn,
-  });
-
   const [filters, setFilters] = useState({
     minAge: "18",
     maxAge: "75",
     gender: "all",
     maxDistance: "0",
+  });
+
+  const { data: currentUser, isLoading: userLoading } = useQuery<User>({
+    queryKey: ["/api/user"],
+    enabled: isLoggedIn,
   });
 
   const getRandomProfiles = () => {

@@ -84,6 +84,13 @@ function App() {
     enabled: isLoggedIn,
   });
 
+  const [filters, setFilters] = useState({
+    minAge: "18",
+    maxAge: "75",
+    gender: "all",
+    maxDistance: "0",
+  });
+
   const getRandomProfiles = () => {
     const demoProfiles: UserWithMatch[] = [
       {
@@ -119,13 +126,6 @@ function App() {
     ];
     return demoProfiles.sort(() => Math.random() - 0.5).slice(0, 2);
   };
-
-  const [filters, setFilters] = useState({
-    minAge: "18",
-    maxAge: "75",
-    gender: "all",
-    maxDistance: "0",
-  });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
     queryKey: ["/api/users", filters],

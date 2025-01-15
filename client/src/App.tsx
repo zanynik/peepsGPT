@@ -315,7 +315,12 @@ function App() {
                       onSelect={setSelectedUser}
                       users={users}
                       isLoggedIn={isLoggedIn}
-                      filters={filters}
+                      filters={{
+                        minAge: filters.minAge,
+                        maxAge: filters.maxAge,
+                        gender: filters.gender,
+                        maxDistance: filters.maxDistance
+                      }}
                       setFilters={setFilters}
                     />
                   </div>

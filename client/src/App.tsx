@@ -120,6 +120,13 @@ function App() {
     return demoProfiles.sort(() => Math.random() - 0.5).slice(0, 2);
   };
 
+  const [filters, setFilters] = useState({
+    minAge: "18",
+    maxAge: "75",
+    gender: "all",
+    maxDistance: "0",
+  });
+
   const { data: users = [], isLoading: usersLoading } = useQuery<UserWithMatch[]>({
     queryKey: ["/api/users", filters],
     enabled: isLoggedIn,
@@ -308,6 +315,8 @@ function App() {
                       onSelect={setSelectedUser}
                       users={users}
                       isLoggedIn={isLoggedIn}
+                      filters={filters}
+                      setFilters={setFilters}
                     />
                   </div>
                 )}
@@ -502,18 +511,21 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
 function UserList({
   onSelect,
   users,
-  isLoggedIn
+  isLoggedIn,
+  filters,
+  setFilters
 }: {
   onSelect: (user: UserWithMatch) => void;
   users: UserWithMatch[];
   isLoggedIn: boolean;
+  filters: {
+    minAge: string;
+    maxAge: string;
+    gender: string;
+    maxDistance: string;
+  };
+  setFilters: (filters: any) => void;
 }) {
-  const [filters, setFilters] = useState({
-    minAge: "18",
-    maxAge: "75",
-    gender: "all",
-    maxDistance: "0",
-  });
 
   const [showFilters, setShowFilters] = useState(false);
   const [tempFilters, setTempFilters] = useState({

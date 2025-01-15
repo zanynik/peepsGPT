@@ -86,6 +86,11 @@ function App() {
     maxDistance: "0",
   });
 
+  const handleFilterUpdate = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+  };
+
   const { data: currentUser, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
     enabled: isLoggedIn,
@@ -315,13 +320,8 @@ function App() {
                       onSelect={setSelectedUser}
                       users={users}
                       isLoggedIn={isLoggedIn}
-                      filters={{
-                        minAge: filters.minAge,
-                        maxAge: filters.maxAge,
-                        gender: filters.gender,
-                        maxDistance: filters.maxDistance
-                      }}
-                      setFilters={setFilters}
+                      filters={filters}
+                      setFilters={handleFilterUpdate}
                     />
                   </div>
                 )}

@@ -42,7 +42,7 @@ export function ConversationSidebar({ onSelectUser, selectedUser }: Conversation
             >
               <div className="relative">
                 <Avatar className="w-12 h-12">
-                  <img src={user.photoUrl} alt={user.name} className="object-cover" />
+                  <img src={user.photoUrl || ""} alt={user.name || ""} className="object-cover" />
                 </Avatar>
                 {user.isOnline && (
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-background rounded-full" />
@@ -58,8 +58,8 @@ export function ConversationSidebar({ onSelectUser, selectedUser }: Conversation
                   )}
                 </div>
                 <OnlineStatus 
-                  isOnline={user.isOnline} 
-                  lastSeen={user.lastSeen}
+                  isOnline={user.isOnline || false} 
+                  lastSeen={user.lastSeen || undefined}
                   size="sm"
                 />
                 {user.lastMessage && (

@@ -3,7 +3,7 @@ import { Circle } from "lucide-react";
 
 interface OnlineStatusProps {
   isOnline?: boolean;
-  lastSeen?: string;
+  lastSeen?: string | Date;
   size?: "sm" | "md" | "lg";
 }
 
@@ -24,7 +24,7 @@ export function OnlineStatus({ isOnline, lastSeen, size = "sm" }: OnlineStatusPr
   }
 
   if (lastSeen) {
-    const lastSeenDate = new Date(lastSeen);
+    const lastSeenDate = lastSeen instanceof Date ? lastSeen : new Date(lastSeen);
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - lastSeenDate.getTime()) / (1000 * 60));
     

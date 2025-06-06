@@ -511,6 +511,8 @@ export function registerRoutes(app: Express): Server {
       }
     });
 
+
+
     const results = allUsers
       .filter(user => {
         if (!user.name && !user.publicDescription) return false;

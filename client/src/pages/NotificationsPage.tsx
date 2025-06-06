@@ -173,7 +173,7 @@ export function NotificationsPage() {
                           disabled={markAsReadMutation.isPending}
                         >
                           {notification.read ? (
-                            <MarkAsUnread className="w-4 h-4" />
+                            <MailOpen className="w-4 h-4" />
                           ) : (
                             <Check className="w-4 h-4" />
                           )}

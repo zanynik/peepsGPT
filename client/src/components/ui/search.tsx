@@ -48,7 +48,7 @@ export function Search({ onSelectResult }: SearchProps) {
         return;
       }
 
-      console.log('Search results:', data);
+
       setResults(data);
     } catch (error) {
       console.error('Search error:', error);

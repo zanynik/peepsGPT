@@ -11,7 +11,7 @@ import {
   Heart,
   Check,
   Trash2,
-  MarkAsUnread
+  MailOpen
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 

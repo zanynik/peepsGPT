@@ -78,7 +78,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const messages = await db.query.messages.findMany({
+      const messagesData = await db.query.messages.findMany({
         where: and(
           eq(messages.senderId, req.session.userId),
           eq(messages.receiverId, parseInt(req.params.userId))
@@ -87,7 +87,7 @@ export function registerRoutes(app: Express): Server {
         limit: 50
       });
 
-      res.json(messages);
+      res.json(messagesData);
     } catch (error: any) {
       console.error("Get messages error:", error);
       res.status(500).send(error.message || "Server error");
@@ -100,13 +100,13 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const notifications = await db.query.notifications.findMany({
+      const notificationsData = await db.query.notifications.findMany({
         where: eq(notifications.userId, req.session.userId),
         orderBy: desc(notifications.createdAt),
         limit: 20
       });
 
-      res.json(notifications);
+      res.json(notificationsData);
     } catch (error: any) {
       console.error("Get notifications error:", error);
       res.status(500).send(error.message || "Server error");
@@ -289,8 +289,10 @@ export function registerRoutes(app: Express): Server {
         conversationUsers.map(async (user) => {
           // Get last message
           const lastMessage = await db.query.messages.findFirst({
-            where: sql`(${messages.senderId} = ${user.id} AND ${messages.receiverId} = ${req.session.userId}) 
-                      OR (${messages.senderId} = ${req.session.userId} AND ${messages.receiverId} = ${user.id})`,
+            where: or(
+              and(eq(messages.senderId, user.id), eq(messages.receiverId, req.session.userId)),
+              and(eq(messages.senderId, req.session.userId), eq(messages.receiverId, user.id))
+            ),
             orderBy: desc(messages.createdAt),
           });
 

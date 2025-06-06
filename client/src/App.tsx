@@ -372,16 +372,20 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
 
   const onSubmit = handleSubmit(async (data) => {
     if (isLogin) {
-      await onLogin(data);
+      await onLogin(data as { username: string; password: string });
       onClose();
     } else {
       await onRegister({
-        ...data,
-        photoUrl: "https://via.placeholder.com/150",
+        email: data.email,
+        name: data.name,
+        age: Number(data.age),
+        gender: data.gender as Gender,
+        location: data.location,
+        photoUrl: `https://api.dicebear.com/7.x/personas/svg?seed=${data.username}`,
         publicDescription: "",
         privateDescription: "",
         socialIds: "",
-      });
+      } as any);
       onClose();
     }
   });
@@ -776,7 +780,7 @@ function UserProfile({ user, onClose, isCurrentUser, onUpdateProfile, setIsLogge
         </div>
 
         {isCurrentUser ? (
-          <ProfileForm user={user} onSubmit={onUpdateProfile} />
+          <ProfileForm user={user} onSubmit={onUpdateProfile || (() => {})} />
         ) : (
           <div className="grid gap-8 md:grid-cols-2">
             <div>
@@ -937,7 +941,7 @@ function ProfileForm({ user, onSubmit }: { user: User; onSubmit: (data: User) =>
           <label className="text-sm font-medium">Gender</label>
           <Select
             defaultValue={user.gender}
-            onValueChange={(value) => setValue("gender", value)}
+            onValueChange={(value) => setValue("gender", value as Gender)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select gender" />

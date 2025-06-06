@@ -363,10 +363,10 @@ export function registerRoutes(app: Express): Server {
         .filter((user) => user.id !== req.session.userId)
         .filter((user) => {
           // Age filter
-          if (user.age < minAge || user.age > maxAge) return false;
+          if (user.age && (user.age < minAge || user.age > maxAge)) return false;
 
           // Gender filter
-          if (gender !== "all" && user.gender.toLowerCase() !== gender.toLowerCase()) return false;
+          if (gender !== "all" && user.gender && user.gender.toLowerCase() !== gender.toLowerCase()) return false;
 
           // Distance filter (skip if maxDistance is "0")
           if (
@@ -515,12 +515,25 @@ export function registerRoutes(app: Express): Server {
     });
 
     const results = allUsers
-      .filter(user => user.embedding && user.embedding.length > 0)
-      .map(user => ({
-        ...user,
-        similarity: cosineSimilarity(queryEmbedding, user.embedding)
-      }))
-      .sort((a, b) => b.similarity - a.similarity)
+      .filter(user => user.embedding && Array.isArray(user.embedding) && user.embedding.length > 0)
+      .map(user => {
+        try {
+          const userEmbedding = Array.isArray(user.embedding) ? 
+            user.embedding.map(val => typeof val === 'string' ? parseFloat(val) : Number(val)) : 
+            [];
+          return {
+            id: user.id,
+            name: user.name,
+            photo_url: user.photoUrl,
+            public_description: user.publicDescription,
+            similarity: cosineSimilarity(queryEmbedding, userEmbedding)
+          };
+        } catch (error) {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => (b?.similarity || 0) - (a?.similarity || 0))
       .slice(0, 10);
 
     res.json(results);

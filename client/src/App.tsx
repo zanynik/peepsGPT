@@ -21,6 +21,7 @@ import { Loader2, Filter } from "lucide-react";
 import { Switch, Route } from "wouter";
 import { AlertCircle } from "lucide-react";
 import { MessagingLayout } from "@/components/messaging/MessagingLayout";
+import { Navigation } from "@/components/ui/navigation";
 
 type Gender = "Male" | "Female" | "Other";
 

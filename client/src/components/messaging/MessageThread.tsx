@@ -14,7 +14,7 @@ interface MessageThreadProps {
   user: User;
 }
 
-interface ExtendedMessage extends Message {
+interface ExtendedMessage extends Omit<Message, 'readAt'> {
   readAt?: Date | null;
 }
 
@@ -92,7 +92,7 @@ export function MessageThread({ user }: MessageThreadProps) {
               <h2 className="font-semibold text-lg">{user.name || ''}</h2>
               <OnlineStatus 
                 isOnline={user.isOnline || false} 
-                lastSeen={user.lastSeen}
+                lastSeen={user.lastSeen || null}
                 size="sm"
               />
             </div>

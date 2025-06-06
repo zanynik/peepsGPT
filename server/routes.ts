@@ -245,6 +245,82 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Enhanced conversations endpoint with last messages and unread counts
+  app.get("/api/conversations", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      // Get users who have had conversations with the current user
+      const conversationUsers = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          photoUrl: users.photoUrl,
+          isOnline: users.isOnline,
+          lastSeen: users.lastSeen,
+          location: users.location,
+        })
+        .from(users)
+        .where(sql`${users.id} IN (
+          SELECT DISTINCT CASE 
+            WHEN ${messages.senderId} = ${req.session.userId} THEN ${messages.receiverId}
+            ELSE ${messages.senderId}
+          END
+          FROM ${messages}
+          WHERE ${messages.senderId} = ${req.session.userId} OR ${messages.receiverId} = ${req.session.userId}
+        )`);
+
+      // Get last message and unread count for each conversation
+      const conversationsWithData = await Promise.all(
+        conversationUsers.map(async (user) => {
+          // Get last message
+          const lastMessage = await db.query.messages.findFirst({
+            where: sql`(${messages.senderId} = ${user.id} AND ${messages.receiverId} = ${req.session.userId}) 
+                      OR (${messages.senderId} = ${req.session.userId} AND ${messages.receiverId} = ${user.id})`,
+            orderBy: desc(messages.createdAt),
+          });
+
+          // Get unread count
+          const unreadCount = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(messages)
+            .where(
+              and(
+                eq(messages.senderId, user.id),
+                eq(messages.receiverId, req.session.userId),
+                sql`${messages.readAt} IS NULL`
+              )
+            );
+
+          return {
+            ...user,
+            lastMessage: lastMessage ? {
+              content: lastMessage.content,
+              createdAt: lastMessage.createdAt,
+              senderId: lastMessage.senderId,
+            } : null,
+            unreadCount: unreadCount[0]?.count || 0,
+          };
+        })
+      );
+
+      // Sort by last message time
+      conversationsWithData.sort((a, b) => {
+        const aTime = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+        const bTime = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+        return bTime - aTime;
+      });
+
+      res.json(conversationsWithData);
+    } catch (error: any) {
+      console.error("Get conversations error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
+  });
+
   app.get("/api/users", async (req, res) => {
     // Prevent caching
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -441,6 +517,83 @@ export function registerRoutes(app: Express): Server {
     res.status(500).json({ error: "Search failed" });
   }
 });
+
+  // Get messages between current user and another user
+  app.get("/api/messages/:userId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      const otherUserId = parseInt(req.params.userId);
+      const userMessages = await db.query.messages.findMany({
+        where: sql`(${messages.senderId} = ${req.session.userId} AND ${messages.receiverId} = ${otherUserId}) 
+                  OR (${messages.senderId} = ${otherUserId} AND ${messages.receiverId} = ${req.session.userId})`,
+        orderBy: [messages.createdAt],
+      });
+
+      res.json(userMessages);
+    } catch (error: any) {
+      console.error("Get messages error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
+  });
+
+  // Send a new message
+  app.post("/api/messages", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      const { receiverId, content } = req.body;
+      
+      if (!receiverId || !content) {
+        return res.status(400).send("Missing required fields");
+      }
+
+      const [newMessage] = await db
+        .insert(messages)
+        .values({
+          senderId: req.session.userId,
+          receiverId,
+          content,
+          messageType: "text",
+        })
+        .returning();
+
+      res.json(newMessage);
+    } catch (error: any) {
+      console.error("Send message error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
+  });
+
+  // Mark messages as read
+  app.post("/api/messages/mark-read/:userId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      const otherUserId = parseInt(req.params.userId);
+      await db
+        .update(messages)
+        .set({ readAt: new Date() })
+        .where(
+          and(
+            eq(messages.senderId, otherUserId),
+            eq(messages.receiverId, req.session.userId),
+            sql`${messages.readAt} IS NULL`
+          )
+        );
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Mark read error:", error);
+      res.status(500).send(error.message || "Server error");
+    }
+  });
 
 app.get("/api/share/:userId", async (req, res) => {
     const { userId } = req.params;

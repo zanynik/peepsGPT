@@ -59,7 +59,7 @@ export function ConversationSidebar({ onSelectUser, selectedUser }: Conversation
                 </div>
                 <OnlineStatus 
                   isOnline={user.isOnline || false} 
-                  lastSeen={user.lastSeen || undefined}
+                  lastSeen={user.lastSeen || null}
                   size="sm"
                 />
                 {user.lastMessage && (

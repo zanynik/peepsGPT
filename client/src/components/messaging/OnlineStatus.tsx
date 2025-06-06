@@ -3,7 +3,7 @@ import { Circle } from "lucide-react";
 
 interface OnlineStatusProps {
   isOnline?: boolean;
-  lastSeen?: string | Date;
+  lastSeen?: string | Date | null;
   size?: "sm" | "md" | "lg";
 }
 

@@ -470,7 +470,7 @@ function AuthForm({ onLogin, onRegister, onClose, isLogin, setShowAuthForm }: Au
           </div>
           <div>
             <Select
-              onValueChange={(value) => setValue("gender", value)}
+              onValueChange={(value) => setValue("gender", value as Gender)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select gender" />

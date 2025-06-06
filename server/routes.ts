@@ -138,14 +138,21 @@ export function registerRoutes(app: Express): Server {
 
       // Validate gender
       const validGenders = ["male", "female", "other"];
-      if (!validGenders.includes(profile.gender?.toLowerCase())) {
+      if (profile.gender && !validGenders.includes(profile.gender?.toLowerCase())) {
         return res.status(400).send("Invalid gender value");
       }
 
       // Validate and get location data
-      const locationData = await validateAndGetLocation(location);
-      if (!locationData) {
-        return res.status(400).send("Invalid location");
+      let locationData = { name: location, latitude: 0, longitude: 0 };
+      if (location) {
+        try {
+          const validatedLocation = await validateAndGetLocation(location);
+          if (validatedLocation) {
+            locationData = validatedLocation;
+          }
+        } catch (error) {
+          console.log("Location validation failed, using provided location");
+        }
       }
 
       const existingUser = await db.query.users.findFirst({
@@ -163,15 +170,19 @@ export function registerRoutes(app: Express): Server {
           username,
           password: hashedPassword,
           email,
+          name: profile.name,
+          age: profile.age,
+          gender: profile.gender?.toLowerCase(),
           location: locationData.name,
           latitude: locationData.latitude.toString(),
           longitude: locationData.longitude.toString(),
-          ...profile,
           photoUrl: profile.photoUrl || "https://via.placeholder.com/150",
           publicDescription: profile.publicDescription || "",
           privateDescription: profile.privateDescription || "",
           socialIds: profile.socialIds || "",
           newsletterEnabled: true,
+          lastSeen: new Date(),
+          isOnline: true,
         })
         .returning();
 
@@ -425,7 +436,8 @@ export function registerRoutes(app: Express): Server {
       const { location, gender, ...profile } = req.body;
 
       // Validate gender
-      if (!genderEnum.safeParse(gender).success) {
+      const validGenders = ["male", "female", "other"];
+      if (gender && !validGenders.includes(gender.toLowerCase())) {
         return res.status(400).send("Invalid gender value");
       }
 

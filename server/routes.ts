@@ -78,7 +78,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const messagesData = await db.query.messages.findMany({
+      const messages = await db.query.messages.findMany({
         where: and(
           eq(messages.senderId, req.session.userId),
           eq(messages.receiverId, parseInt(req.params.userId))
@@ -87,7 +87,7 @@ export function registerRoutes(app: Express): Server {
         limit: 50
       });
 
-      res.json(messagesData);
+      res.json(messages);
     } catch (error: any) {
       console.error("Get messages error:", error);
       res.status(500).send(error.message || "Server error");
@@ -100,13 +100,13 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const notificationsData = await db.query.notifications.findMany({
+      const notifications = await db.query.notifications.findMany({
         where: eq(notifications.userId, req.session.userId),
         orderBy: desc(notifications.createdAt),
         limit: 20
       });
 
-      res.json(notificationsData);
+      res.json(notifications);
     } catch (error: any) {
       console.error("Get notifications error:", error);
       res.status(500).send(error.message || "Server error");
@@ -138,21 +138,14 @@ export function registerRoutes(app: Express): Server {
 
       // Validate gender
       const validGenders = ["male", "female", "other"];
-      if (profile.gender && !validGenders.includes(profile.gender?.toLowerCase())) {
+      if (!validGenders.includes(profile.gender?.toLowerCase())) {
         return res.status(400).send("Invalid gender value");
       }
 
       // Validate and get location data
-      let locationData = { name: location, latitude: 0, longitude: 0 };
-      if (location) {
-        try {
-          const validatedLocation = await validateAndGetLocation(location);
-          if (validatedLocation) {
-            locationData = validatedLocation;
-          }
-        } catch (error) {
-          console.log("Location validation failed, using provided location");
-        }
+      const locationData = await validateAndGetLocation(location);
+      if (!locationData) {
+        return res.status(400).send("Invalid location");
       }
 
       const existingUser = await db.query.users.findFirst({
@@ -170,19 +163,15 @@ export function registerRoutes(app: Express): Server {
           username,
           password: hashedPassword,
           email,
-          name: profile.name,
-          age: profile.age,
-          gender: profile.gender?.toLowerCase(),
           location: locationData.name,
           latitude: locationData.latitude.toString(),
           longitude: locationData.longitude.toString(),
+          ...profile,
           photoUrl: profile.photoUrl || "https://via.placeholder.com/150",
           publicDescription: profile.publicDescription || "",
           privateDescription: profile.privateDescription || "",
           socialIds: profile.socialIds || "",
           newsletterEnabled: true,
-          lastSeen: new Date(),
-          isOnline: true,
         })
         .returning();
 
@@ -289,10 +278,8 @@ export function registerRoutes(app: Express): Server {
         conversationUsers.map(async (user) => {
           // Get last message
           const lastMessage = await db.query.messages.findFirst({
-            where: or(
-              and(eq(messages.senderId, user.id), eq(messages.receiverId, req.session.userId)),
-              and(eq(messages.senderId, req.session.userId), eq(messages.receiverId, user.id))
-            ),
+            where: sql`(${messages.senderId} = ${user.id} AND ${messages.receiverId} = ${req.session.userId}) 
+                      OR (${messages.senderId} = ${req.session.userId} AND ${messages.receiverId} = ${user.id})`,
             orderBy: desc(messages.createdAt),
           });
 
@@ -365,10 +352,10 @@ export function registerRoutes(app: Express): Server {
         .filter((user) => user.id !== req.session.userId)
         .filter((user) => {
           // Age filter
-          if (user.age && (user.age < minAge || user.age > maxAge)) return false;
+          if (user.age < minAge || user.age > maxAge) return false;
 
           // Gender filter
-          if (gender !== "all" && user.gender && user.gender.toLowerCase() !== gender.toLowerCase()) return false;
+          if (gender !== "all" && user.gender.toLowerCase() !== gender.toLowerCase()) return false;
 
           // Distance filter (skip if maxDistance is "0")
           if (
@@ -438,8 +425,7 @@ export function registerRoutes(app: Express): Server {
       const { location, gender, ...profile } = req.body;
 
       // Validate gender
-      const validGenders = ["male", "female", "other"];
-      if (gender && !validGenders.includes(gender.toLowerCase())) {
+      if (!genderEnum.safeParse(gender).success) {
         return res.status(400).send("Invalid gender value");
       }
 
@@ -491,13 +477,20 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/search", async (req, res) => {
   try {
     const { query } = req.body;
-    
-    if (!query || query.trim().length === 0) {
-      return res.json([]);
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ error: "Invalid query" });
     }
 
-    const searchTerm = query.toLowerCase().trim();
-    
+    const queryEmbedding = await generateEmbedding(query);
+    const embeddingArray = `{${queryEmbedding.join(',')}}`;
+
+    const cosineSimilarity = (vec1: number[], vec2: number[]) => {
+      const dotProduct = vec1.reduce((sum, val, idx) => sum + val * vec2[idx], 0);
+      const magnitude1 = Math.sqrt(vec1.reduce((sum, val) => sum + val ** 2, 0));
+      const magnitude2 = Math.sqrt(vec2.reduce((sum, val) => sum + val ** 2, 0));
+      return dotProduct / (magnitude1 * magnitude2);
+    };
+
     const allUsers = await db.query.users.findMany({
       columns: {
         id: true,
@@ -505,53 +498,16 @@ export function registerRoutes(app: Express): Server {
         name: true,
         publicDescription: true,
         photoUrl: true,
-        age: true,
-        gender: true,
-        location: true
+        embedding: true
       }
     });
 
-
-
     const results = allUsers
-      .filter(user => {
-        if (!user.name && !user.publicDescription) return false;
-        
-        const nameMatch = user.name?.toLowerCase().includes(searchTerm);
-        const descMatch = user.publicDescription?.toLowerCase().includes(searchTerm);
-        const locationMatch = user.location?.toLowerCase().includes(searchTerm);
-        const usernameMatch = user.username?.toLowerCase().includes(searchTerm);
-        
-        return nameMatch || descMatch || locationMatch || usernameMatch;
-      })
-      .map(user => {
-        // Calculate similarity score based on text matching
-        let similarity = 0;
-        const searchWords = searchTerm.split(' ').filter(w => w.length > 0);
-        
-        searchWords.forEach(word => {
-          if (user.name?.toLowerCase().includes(word)) similarity += 0.4;
-          if (user.publicDescription?.toLowerCase().includes(word)) similarity += 0.3;
-          if (user.location?.toLowerCase().includes(word)) similarity += 0.2;
-          if (user.username?.toLowerCase().includes(word)) similarity += 0.1;
-        });
-        
-        // Boost exact matches
-        if (user.name?.toLowerCase() === searchTerm) similarity += 0.5;
-        if (user.publicDescription?.toLowerCase().includes(searchTerm)) similarity += 0.2;
-        
-        return {
-          id: user.id,
-          name: user.name || user.username,
-          photo_url: user.photoUrl,
-          public_description: user.publicDescription,
-          age: user.age,
-          gender: user.gender,
-          location: user.location,
-          similarity: Math.min(similarity, 1.0)
-        };
-      })
-      .filter(user => user.similarity > 0)
+      .filter(user => user.embedding && user.embedding.length > 0)
+      .map(user => ({
+        ...user,
+        similarity: cosineSimilarity(queryEmbedding, user.embedding)
+      }))
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, 10);
 

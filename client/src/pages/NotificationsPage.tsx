@@ -11,7 +11,7 @@ import {
   Heart,
   Check,
   Trash2,
-  MailOpen
+  MarkAsUnread
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -173,7 +173,7 @@ export function NotificationsPage() {
                           disabled={markAsReadMutation.isPending}
                         >
                           {notification.read ? (
-                            <MailOpen className="w-4 h-4" />
+                            <MarkAsUnread className="w-4 h-4" />
                           ) : (
                             <Check className="w-4 h-4" />
                           )}

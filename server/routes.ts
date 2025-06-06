@@ -491,20 +491,13 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/search", async (req, res) => {
   try {
     const { query } = req.body;
-    if (!query || typeof query !== 'string') {
-      return res.status(400).json({ error: "Invalid query" });
+    
+    if (!query || query.trim().length === 0) {
+      return res.json([]);
     }
 
-    const queryEmbedding = await generateEmbedding(query);
-    const embeddingArray = `{${queryEmbedding.join(',')}}`;
-
-    const cosineSimilarity = (vec1: number[], vec2: number[]) => {
-      const dotProduct = vec1.reduce((sum, val, idx) => sum + val * vec2[idx], 0);
-      const magnitude1 = Math.sqrt(vec1.reduce((sum, val) => sum + val ** 2, 0));
-      const magnitude2 = Math.sqrt(vec2.reduce((sum, val) => sum + val ** 2, 0));
-      return dotProduct / (magnitude1 * magnitude2);
-    };
-
+    const searchTerm = query.toLowerCase().trim();
+    
     const allUsers = await db.query.users.findMany({
       columns: {
         id: true,
@@ -512,30 +505,52 @@ export function registerRoutes(app: Express): Server {
         name: true,
         publicDescription: true,
         photoUrl: true,
-        embedding: true
+        age: true,
+        gender: true,
+        location: true
       }
     });
 
     const results = allUsers
-      .filter(user => user.embedding && Array.isArray(user.embedding) && user.embedding.length > 0)
-      .map(user => {
-        try {
-          const userEmbedding = Array.isArray(user.embedding) ? 
-            user.embedding.map(val => typeof val === 'string' ? parseFloat(val) : Number(val)) : 
-            [];
-          return {
-            id: user.id,
-            name: user.name,
-            photo_url: user.photoUrl,
-            public_description: user.publicDescription,
-            similarity: cosineSimilarity(queryEmbedding, userEmbedding)
-          };
-        } catch (error) {
-          return null;
-        }
+      .filter(user => {
+        if (!user.name && !user.publicDescription) return false;
+        
+        const nameMatch = user.name?.toLowerCase().includes(searchTerm);
+        const descMatch = user.publicDescription?.toLowerCase().includes(searchTerm);
+        const locationMatch = user.location?.toLowerCase().includes(searchTerm);
+        const usernameMatch = user.username?.toLowerCase().includes(searchTerm);
+        
+        return nameMatch || descMatch || locationMatch || usernameMatch;
       })
-      .filter(Boolean)
-      .sort((a, b) => (b?.similarity || 0) - (a?.similarity || 0))
+      .map(user => {
+        // Calculate similarity score based on text matching
+        let similarity = 0;
+        const searchWords = searchTerm.split(' ').filter(w => w.length > 0);
+        
+        searchWords.forEach(word => {
+          if (user.name?.toLowerCase().includes(word)) similarity += 0.4;
+          if (user.publicDescription?.toLowerCase().includes(word)) similarity += 0.3;
+          if (user.location?.toLowerCase().includes(word)) similarity += 0.2;
+          if (user.username?.toLowerCase().includes(word)) similarity += 0.1;
+        });
+        
+        // Boost exact matches
+        if (user.name?.toLowerCase() === searchTerm) similarity += 0.5;
+        if (user.publicDescription?.toLowerCase().includes(searchTerm)) similarity += 0.2;
+        
+        return {
+          id: user.id,
+          name: user.name || user.username,
+          photo_url: user.photoUrl,
+          public_description: user.publicDescription,
+          age: user.age,
+          gender: user.gender,
+          location: user.location,
+          similarity: Math.min(similarity, 1.0)
+        };
+      })
+      .filter(user => user.similarity > 0)
+      .sort((a, b) => b.similarity - a.similarity)
       .slice(0, 10);
 
     res.json(results);

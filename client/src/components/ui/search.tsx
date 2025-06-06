@@ -43,9 +43,12 @@ export function Search({ onSelectResult }: SearchProps) {
 
       const data = await response.json();
       if (!Array.isArray(data)) {
-        throw new Error('Invalid response format');
+        console.error('Invalid response format:', data);
+        setResults([]);
+        return;
       }
 
+      console.log('Search results:', data);
       setResults(data);
     } catch (error) {
       console.error('Search error:', error);
@@ -81,9 +84,9 @@ export function Search({ onSelectResult }: SearchProps) {
             >
               <div className="aspect-video relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20" />
-                {result.photoUrl && (
+                {result.photo_url && (
                   <img
-                    src={result.photoUrl}
+                    src={result.photo_url}
                     alt={result.name}
                     className="w-full h-full object-cover"
                   />
@@ -95,8 +98,11 @@ export function Search({ onSelectResult }: SearchProps) {
                     <div>
                       <h3 className="font-semibold text-lg">{result.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {result.age} • {result.gender}
+                        {result.age && result.gender ? `${result.age} • ${result.gender}` : (result.age || result.gender || '')}
                       </p>
+                      {result.location && (
+                        <p className="text-xs text-muted-foreground">📍 {result.location}</p>
+                      )}
                     </div>
                     <div className="text-right">
                       <span className="inline-block px-2 py-1 text-sm font-semibold rounded-full bg-primary/10 text-primary">
@@ -104,9 +110,9 @@ export function Search({ onSelectResult }: SearchProps) {
                       </span>
                     </div>
                   </div>
-                  {result.publicDescription && (
+                  {result.public_description && (
                     <p className="text-sm line-clamp-2">
-                      {result.publicDescription.split("\n")[0]}
+                      {result.public_description.split("\n")[0]}
                     </p>
                   )}
                 </div>

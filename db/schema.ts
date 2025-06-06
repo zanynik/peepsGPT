@@ -29,6 +29,8 @@ export const users = pgTable("users", {
   socialIds: text("social_ids"),
   newsletterEnabled: boolean("newsletter_enabled").default(true),
   embedding: text("embedding").array(),
+  lastSeen: timestamp("last_seen").defaultNow(),
+  isOnline: boolean("is_online").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -46,6 +48,8 @@ export const messages = pgTable("messages", {
   senderId: integer("sender_id").references(() => users.id),
   receiverId: integer("receiver_id").references(() => users.id),
   content: text("content").notNull(),
+  readAt: timestamp("read_at"),
+  messageType: text("message_type").default("text"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
